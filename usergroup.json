@@ -1,0 +1,38 @@
+[
+    {
+        "model": "accounts.usergroup",
+        "pk": 1,
+        "fields": {
+            "user": 1,
+            "group": 1,
+            "LocationId": 101,
+            "ImportCode": "ADM-2023",
+            "IsDeleted": false,
+            "ModifiedOn": "2025-02-07T12:00:00Z"
+        }
+    },
+    {
+        "model": "accounts.usergroup",
+        "pk": 2,
+        "fields": {
+            "user": 2,
+            "group": 2,
+            "LocationId": 201,
+            "ImportCode": "TCH-2023",
+            "IsDeleted": false,
+            "ModifiedOn": "2025-02-07T12:00:00Z"
+        }
+    },
+    {
+        "model": "accounts.usergroup",
+        "pk": 3,
+        "fields": {
+            "user": 3,
+            "group": 3,
+            "LocationId": 301,
+            "ImportCode": "STU-2023",
+            "IsDeleted": false,
+            "ModifiedOn": "2025-02-07T12:00:00Z"
+        }
+    }
+]

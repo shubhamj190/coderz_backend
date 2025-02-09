@@ -1,0 +1,68 @@
+[
+    {
+        "model": "accounts.user",
+        "pk": 1,
+        "fields": {
+            "UserName": "admin_john",
+            "NormalizedUserName": "admin_john",
+            "Email": "john@school.com",
+            "NormalizedEmail": "john@school.com",
+            "password": "pbkdf2_sha256$260000$eGNiMFaIQByb93PV$uYzHnD4R8JKxKwzS1A9N81Iuy7WsOZ0bD3rGpWvOJ5s=",
+            "EmailConfirmed": true,
+            "PhoneNumber": "+911234567890",
+            "PhoneNumberConfirmed": false,
+            "TwoFactorEnabled": false,
+            "LockoutEnd": null,
+            "LockoutEnabled": true,
+            "AccessFailedCount": 0,
+            "InstitutionId": 1,
+            "IsDeleted": false,
+            "role": "admin",
+            "date_joined": "2025-02-07T12:00:00Z"
+        }
+    },
+    {
+        "model": "accounts.user",
+        "pk": 2,
+        "fields": {
+            "UserName": "teacher_mary",
+            "NormalizedUserName": "teacher_mary",
+            "Email": "mary@school.com",
+            "NormalizedEmail": "mary@school.com",
+            "password": "pbkdf2_sha256$260000$eGNiMFaIQByb93PV$uYzHnD4R8JKxKwzS1A9N81Iuy7WsOZ0bD3rGpWvOJ5s=",
+            "EmailConfirmed": true,
+            "PhoneNumber": "+919876543210",
+            "PhoneNumberConfirmed": false,
+            "TwoFactorEnabled": false,
+            "LockoutEnd": null,
+            "LockoutEnabled": true,
+            "AccessFailedCount": 0,
+            "InstitutionId": 1,
+            "IsDeleted": false,
+            "role": "teacher",
+            "date_joined": "2025-02-07T12:00:00Z"
+        }
+    },
+    {
+        "model": "accounts.user",
+        "pk": 3,
+        "fields": {
+            "UserName": "student_rahul",
+            "NormalizedUserName": "student_rahul",
+            "Email": "rahul@school.com",
+            "NormalizedEmail": "rahul@school.com",
+            "password": "pbkdf2_sha256$260000$eGNiMFaIQByb93PV$uYzHnD4R8JKxKwzS1A9N81Iuy7WsOZ0bD3rGpWvOJ5s=",
+            "EmailConfirmed": true,
+            "PhoneNumber": "+919999999999",
+            "PhoneNumberConfirmed": false,
+            "TwoFactorEnabled": false,
+            "LockoutEnd": null,
+            "LockoutEnabled": true,
+            "AccessFailedCount": 0,
+            "InstitutionId": 1,
+            "IsDeleted": false,
+            "role": "student",
+            "date_joined": "2025-02-07T12:00:00Z"
+        }
+    }
+]

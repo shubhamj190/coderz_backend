@@ -1,0 +1,92 @@
+[
+    {
+        "model": "accounts.userdetails",
+        "pk": 1,
+        "fields": {
+            "user": 1,
+            "ContactNo": "+911111111111",
+            "AdditionalContactNo": null,
+            "Address": "123 Admin Street, Admin City",
+            "Location": "Admin City",
+            "Pincode": "123456",
+            "CityCode": "ADM",
+            "StateCode": "ADM_ST",
+            "CountryCode": "IN",
+            "LastUsedDevice": null,
+            "PromoCode": "ADMINPROMO",
+            "PromoRefCode": null,
+            "ModifiedOn": "2025-02-07T12:00:00Z",
+            "CustomerGST": null,
+            "UserSource": "internal",
+            "SchoolName": null,
+            "BoardId": null,
+            "GradeId": null,
+            "QuestId": null,
+            "LastQuestAccessed": null,
+            "IsDirectUser": false,
+            "UTMData": null,
+            "AdmissionNo": null
+        }
+    },
+    {
+        "model": "accounts.userdetails",
+        "pk": 2,
+        "fields": {
+            "user": 2,
+            "ContactNo": "+919876543211",
+            "AdditionalContactNo": "+919876543212",
+            "Address": "456 Teacher Lane, Teacher City",
+            "Location": "Teacher City",
+            "Pincode": "654321",
+            "CityCode": "TCH",
+            "StateCode": "TCH_ST",
+            "CountryCode": "IN",
+            "LastUsedDevice": "iPhone",
+            "PromoCode": "TEACHPROMO",
+            "PromoRefCode": "REF123",
+            "ModifiedOn": "2025-02-07T12:00:00Z",
+            "CustomerGST": "GST12345",
+            "UserSource": "external",
+            "SchoolName": "Teacher School",
+            "BoardId": 1,
+            "GradeId": 5,
+            "QuestId": 2,
+            "LastQuestAccessed": "2025-02-07T10:00:00Z",
+            "IsDirectUser": true,
+            "UTMData": {
+                "campaign": "spring_sale",
+                "source": "newsletter"
+            },
+            "AdmissionNo": "ADM002"
+        }
+    },
+    {
+        "model": "accounts.userdetails",
+        "pk": 3,
+        "fields": {
+            "user": 3,
+            "ContactNo": "+919999999990",
+            "AdditionalContactNo": null,
+            "Address": "789 Student Blvd, Student Town",
+            "Location": "Student Town",
+            "Pincode": "789012",
+            "CityCode": "STD",
+            "StateCode": "STD_ST",
+            "CountryCode": "IN",
+            "LastUsedDevice": "Android",
+            "PromoCode": null,
+            "PromoRefCode": null,
+            "ModifiedOn": "2025-02-07T12:00:00Z",
+            "CustomerGST": null,
+            "UserSource": "mobile",
+            "SchoolName": "Student High School",
+            "BoardId": 2,
+            "GradeId": 8,
+            "QuestId": 3,
+            "LastQuestAccessed": "2025-02-07T09:30:00Z",
+            "IsDirectUser": false,
+            "UTMData": {},
+            "AdmissionNo": "ADM003"
+        }
+    }
+]
