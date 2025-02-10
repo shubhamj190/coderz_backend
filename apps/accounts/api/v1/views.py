@@ -1,12 +1,13 @@
 import base64
 import logging
-
+from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from apps.accounts.models.grades import Division, Grade
 from core.permissions.role_based import IsSpecificAdmin
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -16,6 +17,8 @@ from django.conf import settings
 
 from .serializers import (
     AdminLoginSerializer,
+    DivisionSerializer,
+    GradeSerializer,
     TeacherLoginSerializer,
     StudentLoginSerializer
 )
@@ -373,3 +376,47 @@ class ResetPasswordAPIView(APIView):
             {"message": "Password has been reset successfully."},
             status=status.HTTP_200_OK
         )
+    
+# Grade Views
+class GradeListCreateAPIView(generics.ListCreateAPIView):
+    """
+    GET: List all grades.
+    POST: Create a new grade.
+    Access restricted to admin users.
+    """
+    queryset = Grade.objects.all()
+    serializer_class = GradeSerializer
+    permission_classes = [IsAuthenticated, IsSpecificAdmin]
+
+class GradeRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    GET: Retrieve a grade by pk.
+    PUT/PATCH: Update a grade.
+    DELETE: Delete a grade.
+    Access restricted to admin users.
+    """
+    queryset = Grade.objects.all()
+    serializer_class = GradeSerializer
+    permission_classes = [IsAuthenticated, IsSpecificAdmin]
+
+# Division Views
+class DivisionListCreateAPIView(generics.ListCreateAPIView):
+    """
+    GET: List all divisions.
+    POST: Create a new division.
+    Access restricted to admin users.
+    """
+    queryset = Division.objects.all()
+    serializer_class = DivisionSerializer
+    permission_classes = [IsAuthenticated, IsSpecificAdmin]
+
+class DivisionRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    GET: Retrieve a division by pk.
+    PUT/PATCH: Update a division.
+    DELETE: Delete a division.
+    Access restricted to admin users.
+    """
+    queryset = Division.objects.all()
+    serializer_class = DivisionSerializer
+    permission_classes = [IsAuthenticated, IsSpecificAdmin]

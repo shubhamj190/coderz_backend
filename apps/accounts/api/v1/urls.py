@@ -4,6 +4,10 @@ from .views import (
     AdminLoginView,
     AdminLogoutView,
     AdminSignupView,
+    DivisionListCreateAPIView,
+    DivisionRetrieveUpdateDestroyAPIView,
+    GradeListCreateAPIView,
+    GradeRetrieveUpdateDestroyAPIView,
     ResetPasswordAPIView,
     StudentForgotPasswordAPIView,
     StudentLogoutView,
@@ -35,5 +39,12 @@ urlpatterns = [
     path('forgot-password/student/', StudentForgotPasswordAPIView.as_view(), name='student-forgot-password'),
     # The reset password endpoint accepts uidb64 and token as URL parameters.
     path('reset-password/<uidb64>/<token>/', ResetPasswordAPIView.as_view(), name='reset-password'),
+    # Grade endpoints
+    path('admin/grades/', GradeListCreateAPIView.as_view(), name='grade-list-create'),
+    path('admin/grades/<int:pk>/', GradeRetrieveUpdateDestroyAPIView.as_view(), name='grade-detail'),
+    
+    # Division endpoints
+    path('admin/divisions/', DivisionListCreateAPIView.as_view(), name='division-list-create'),
+    path('admin/divisions/<int:pk>/', DivisionRetrieveUpdateDestroyAPIView.as_view(), name='division-detail'),
 
 ]
