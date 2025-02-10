@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import (
+    AdminAddTeacherAPIView,
     AdminForgotPasswordAPIView,
     AdminLoginView,
     AdminLogoutView,
@@ -46,5 +47,6 @@ urlpatterns = [
     # Division endpoints
     path('admin/divisions/', DivisionListCreateAPIView.as_view(), name='division-list-create'),
     path('admin/divisions/<int:pk>/', DivisionRetrieveUpdateDestroyAPIView.as_view(), name='division-detail'),
+    path('admin/teachers/add/', AdminAddTeacherAPIView.as_view(), name='admin-add-teacher'),
 
 ]

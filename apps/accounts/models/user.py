@@ -90,6 +90,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def id(self):
         return self.UserId
+    
+    def get_full_name(self):
+        return f"{self.FirstName} {self.LastName}"
 
     class Meta:
         db_table = 'usersidentity'
@@ -102,7 +105,7 @@ class Teacher(models.Model):
     employee_id = models.CharField(max_length=50, unique=True)
     specialization = models.CharField(max_length=100)  # e.g., Python, Scratch, Web Development
     qualification = models.CharField(max_length=255)
-    years_of_experience = models.IntegerField()
+    years_of_experience = models.IntegerField(default=0)
     assigned_grades = models.ManyToManyField(Grade, related_name='teachers')
     assigned_divisions = models.ManyToManyField(Division, related_name='teachers')
     is_active = models.BooleanField(default=True)
@@ -111,4 +114,4 @@ class Teacher(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.get_full_name()} - {self.employee_id}"
+        return f"{self.user.get_full_name()} - {self.user.UserName}"

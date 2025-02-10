@@ -19,11 +19,12 @@ from .serializers import (
     AdminLoginSerializer,
     DivisionSerializer,
     GradeSerializer,
+    TeacherCreateSerializer,
     TeacherLoginSerializer,
     StudentLoginSerializer
 )
 
-from apps.accounts.models.user import User
+from apps.accounts.models.user import Teacher, User
 
 logger = logging.getLogger(__name__)
 
@@ -419,4 +420,13 @@ class DivisionRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
     """
     queryset = Division.objects.all()
     serializer_class = DivisionSerializer
+    permission_classes = [IsAuthenticated, IsSpecificAdmin]
+
+class AdminAddTeacherAPIView(generics.CreateAPIView):
+    """
+    API endpoint for admin users to add a new teacher.
+    This creates both the user record (with role 'teacher' and gender) and the teacher profile.
+    """
+    queryset = Teacher.objects.all()
+    serializer_class = TeacherCreateSerializer
     permission_classes = [IsAuthenticated, IsSpecificAdmin]

@@ -1,8 +1,9 @@
 # apps/accounts/api/v1/auth/serializers.py
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
-from apps.accounts.models.user import User
+from apps.accounts.models.user import User, Teacher
 from apps.accounts.models import Grade, Division
+from django.db import transaction
 
 class RoleSpecificSerializer:
     def validate(self, attrs):
@@ -42,3 +43,65 @@ class DivisionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Division
         fields = '__all__'
+
+class TeacherCreateSerializer(serializers.ModelSerializer):
+    # Fields for creating the related user record
+    email = serializers.EmailField(write_only=True)
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+    first_name = serializers.CharField(write_only=True)
+    last_name = serializers.CharField(write_only=True)
+    gender = serializers.ChoiceField(choices=User.GENDER_CHOICES, write_only=True)
+
+    class Meta:
+        model = Teacher
+        # Include teacher-specific fields as well as the extra user fields
+        fields = [
+            "assigned_grades",     # Expect a list of grade IDs
+            "assigned_divisions",  # Expect a list of division IDs
+            "email",
+            "password",
+            "first_name",
+            "last_name",
+            "gender"
+        ]
+    
+    def create(self, validated_data):
+        try:
+            # Extract user-related data
+            email = validated_data.pop("email")
+            password = validated_data.pop("password")
+            first_name = validated_data.pop("first_name")
+            last_name = validated_data.pop("last_name")
+            gender = validated_data.pop("gender")
+            
+            # Pop many-to-many fields (if provided)
+            assigned_grades = validated_data.pop("assigned_grades", None)
+            assigned_divisions = validated_data.pop("assigned_divisions", None)
+            available_time_slots = validated_data.pop("available_time_slots", None)
+            
+            with transaction.atomic():
+                # Create the user using the custom user manager.
+                user = User.objects.create_user(
+                    Email=email,
+                    password=password,
+                    role='teacher',  # Force the role to teacher
+                    FirstName=first_name,
+                    LastName=last_name,
+                    gender=gender
+                )
+                
+                # Create the Teacher record linking to the user.
+                teacher = Teacher.objects.create(user=user, **validated_data)
+                
+                # Assign many-to-many relationships using .set() if data is provided.
+                if assigned_grades is not None:
+                    teacher.assigned_grades.set(assigned_grades)
+                if assigned_divisions is not None:
+                    teacher.assigned_divisions.set(assigned_divisions)
+                if available_time_slots is not None:
+                    teacher.available_time_slots.set(available_time_slots)
+        except Exception as e:
+            # Raise a validation error so that the error gets returned in the API response.
+            raise serializers.ValidationError({"error": str(e)})
+        
+        return teacher
