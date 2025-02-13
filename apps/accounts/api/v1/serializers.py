@@ -109,12 +109,13 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
 class TeacherListSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     UserName = serializers.CharField(source="user.UserName", read_only=True)
+    email = serializers.CharField(source="user.Email", read_only=True)
     gender = serializers.CharField(source="user.gender", read_only=True)
     id = serializers.IntegerField(source="user.UserId", read_only=True)
 
     class Meta:
         model = Teacher
-        fields = ['full_name', 'id', 'UserName', 'gender', 'is_active']
+        fields = ['full_name', 'email','id', 'UserName', 'gender', 'is_active']
 
     def get_full_name(self, obj):
         # Combine first and last names; adjust as needed.
