@@ -454,3 +454,4 @@ class TeacherDetailAPIView(generics.RetrieveUpdateAPIView):
     queryset = Teacher.objects.all()
     serializer_class = TeacherDetailSerializer
     permission_classes = [IsAuthenticated, IsSpecificAdmin]
+

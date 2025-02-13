@@ -114,7 +114,7 @@ class TeacherListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Teacher
-        fields = ['full_name', 'id', 'UserName', 'gender']
+        fields = ['full_name', 'id', 'UserName', 'gender', 'is_active']
 
     def get_full_name(self, obj):
         # Combine first and last names; adjust as needed.
@@ -143,6 +143,7 @@ class TeacherDetailSerializer(serializers.ModelSerializer):
             "assigned_grades",
             "assigned_divisions",
             # "available_time_slots"
+            'is_active'
         ]
     
     def update(self, instance, validated_data):
