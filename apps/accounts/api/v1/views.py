@@ -21,6 +21,7 @@ from .serializers import (
     DivisionSerializer,
     GradeSerializer,
     StudentCreateSerializer,
+    StudentListSerializer,
     TeacherCreateSerializer,
     TeacherDetailSerializer,
     TeacherListSerializer,
@@ -464,3 +465,12 @@ class AdminAddStudentAPIView(generics.CreateAPIView):
     serializer_class = StudentCreateSerializer
     permission_classes = [IsAuthenticated, IsSpecificAdmin]
 
+class StudentListAPIView(generics.ListAPIView):
+    """
+    API view to list all students.
+    Accessible only by admin users.
+    """
+    queryset = Student.objects.all()
+    serializer_class = StudentListSerializer
+    permission_classes = [IsAuthenticated, IsSpecificAdmin]
+    pagination_class = StandardResultsSetPagination
