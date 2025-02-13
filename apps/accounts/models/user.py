@@ -11,20 +11,44 @@ class CustomUserManager(BaseUserManager):
         
         Email = self.normalize_email(Email)
         
-        # If no username is provided, generate one dynamically based on role.
-        if not UserName:
-            prefix_map = {
-                'admin': 'A',
-                'teacher': 'F',
-                'student': 'S'
-            }
-            prefix = prefix_map.get(role, 'S')
-            # Count existing users with the same role to generate a sequential number.
-            count = self.filter(role=role).count()
-            # Format the number as three digits (001, 002, etc.)
-            UserName = f"{prefix}{count + 1:03d}"
+        if role == 'student':
+            # Pop the keys that are not part of the User model
+            roll_number = extra_fields.pop('roll_number', None)
+            grade_obj = extra_fields.pop('grade', None)
+            division_obj = extra_fields.pop('division', None)
+            
+            if not roll_number:
+                raise ValueError("roll_number must be provided for student user creation")
+            
+            # Determine grade and division strings (removing spaces)
+            if grade_obj:
+                grade_str = grade_obj.name if hasattr(grade_obj, 'name') else str(grade_obj)
+                grade_str = grade_str.replace(" ", "")
+            else:
+                grade_str = ""
+                
+            if division_obj:
+                division_str = division_obj.name if hasattr(division_obj, 'name') else str(division_obj)
+                division_str = division_str.replace(" ", "")
+            else:
+                division_str = ""
+            
+            # Generate the username based on roll number, grade, and division if not provided.
+            if not UserName:
+                UserName = f"s{roll_number}{grade_str}{division_str}"
+        else:
+            # For non-student roles, generate a sequential username if not provided.
+            if not UserName:
+                prefix_map = {
+                    'admin': 'A',
+                    'teacher': 'F',
+                    'student': 'S'
+                }
+                prefix = prefix_map.get(role, 'S')
+                count = self.filter(role=role).count()
+                UserName = f"{prefix}{count + 1:03d}"
         
-        # Create and save the user.
+        # Create and save the user without the student-only extra fields.
         user = self.model(UserName=UserName, Email=Email, role=role, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -115,3 +139,27 @@ class Teacher(models.Model):
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.user.UserName}"
+    
+
+class Student(models.Model):
+    user = models.OneToOneField('User', on_delete=models.CASCADE, related_name='student_profile')
+    FirstName = models.CharField(max_length=50, default='', blank=True, null=True)
+    LastName = models.CharField(max_length=50, default='', blank=True, null=True)
+    date_of_birth = models.DateField()
+    grade = models.ForeignKey('accounts.Grade', on_delete=models.CASCADE)
+    division = models.ForeignKey('accounts.Division', on_delete=models.CASCADE)
+    roll_number = models.CharField(max_length=20, null=True, blank=True,default='')
+    parent_name = models.CharField(max_length=255, null=True, blank=True,default='')
+    parent_email = models.EmailField(null=True, blank=True,default='')
+    parent_phone = models.CharField(max_length=20,null=True, blank=True,default='')
+    admission_number = models.CharField(max_length=50)
+    
+    # For tracking student progress
+    # enrolled_courses = models.ManyToManyField('grade.Course', through='StudentCourseEnrollment')
+    is_active = models.BooleanField(default=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.student_id}"

@@ -20,6 +20,7 @@ from .serializers import (
     AdminLoginSerializer,
     DivisionSerializer,
     GradeSerializer,
+    StudentCreateSerializer,
     TeacherCreateSerializer,
     TeacherDetailSerializer,
     TeacherListSerializer,
@@ -27,7 +28,7 @@ from .serializers import (
     StudentLoginSerializer,
 )
 
-from apps.accounts.models.user import Teacher, User
+from apps.accounts.models.user import Student, Teacher, User
 
 logger = logging.getLogger(__name__)
 
@@ -444,7 +445,6 @@ class TeacherListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsSpecificAdmin]
     pagination_class = StandardResultsSetPagination
 
-    
 class TeacherDetailAPIView(generics.RetrieveUpdateAPIView):
     """
     API endpoint to retrieve a single teacher's details and update them.
@@ -453,5 +453,14 @@ class TeacherDetailAPIView(generics.RetrieveUpdateAPIView):
     """
     queryset = Teacher.objects.all()
     serializer_class = TeacherDetailSerializer
+    permission_classes = [IsAuthenticated, IsSpecificAdmin]
+
+class AdminAddStudentAPIView(generics.CreateAPIView):
+    """
+    API endpoint for admin users to add a new student.
+    This creates both a User record (with role 'student') and a Student profile.
+    """
+    queryset = Student.objects.all()
+    serializer_class = StudentCreateSerializer
     permission_classes = [IsAuthenticated, IsSpecificAdmin]
 

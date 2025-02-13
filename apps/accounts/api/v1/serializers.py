@@ -1,7 +1,7 @@
 # apps/accounts/api/v1/auth/serializers.py
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
-from apps.accounts.models.user import User, Teacher
+from apps.accounts.models.user import Student, User, Teacher
 from apps.accounts.models import Grade, Division
 from django.db import transaction
 
@@ -165,3 +165,73 @@ class TeacherDetailSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+    
+class StudentCreateSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(write_only=True)
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'}, required=False)
+    first_name = serializers.CharField(write_only=True)
+    last_name = serializers.CharField(write_only=True)
+    gender = serializers.ChoiceField(choices=User.GENDER_CHOICES, write_only=True)
+    
+    class Meta:
+        model = Student
+        fields = [
+            "date_of_birth",
+            "grade",           # PK or instance of Grade
+            "division",        # PK or instance of Division
+            "roll_number",
+            "parent_name",
+            "parent_email",
+            "parent_phone",
+            "admission_number",
+            "email",
+            "password",
+            "first_name",
+            "last_name",
+            "gender"
+        ]
+    
+    def create(self, validated_data):
+        email = validated_data.get("email")
+        password = validated_data.get("password")
+        first_name = validated_data.get("first_name")
+        last_name = validated_data.get("last_name")
+        gender = validated_data.get("gender")
+        roll_number = validated_data.get("roll_number")
+        grade = validated_data.get("grade")
+        division = validated_data.get("division")
+        date_of_birth = validated_data.get("date_of_birth")
+        parent_name = validated_data.get("parent_name", "")
+        parent_email = validated_data.get("parent_email", "")
+        parent_phone = validated_data.get("parent_phone", "")
+        admission_number = validated_data.get("admission_number")
+        
+        with transaction.atomic():
+            # Create the User record with role 'student'
+            user = User.objects.create_user(
+                Email=email,
+                password=password,
+                role='student',
+                FirstName=first_name,
+                LastName=last_name,
+                gender=gender,
+                roll_number=roll_number,
+                grade=grade,
+                division=division
+            )
+            
+            # Create the Student record linking to the user.
+            student = Student.objects.create(
+                user=user,
+                FirstName=first_name,
+                LastName=last_name,
+                date_of_birth=date_of_birth,
+                grade=grade,
+                division=division,
+                roll_number=roll_number,
+                parent_name=parent_name,
+                parent_email=parent_email,
+                parent_phone=parent_phone,
+                admission_number=admission_number
+            )
+        return student
