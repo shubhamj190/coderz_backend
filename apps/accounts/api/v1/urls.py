@@ -12,7 +12,9 @@ from .views import (
     ResetPasswordAPIView,
     StudentForgotPasswordAPIView,
     StudentLogoutView,
+    TeacherDetailAPIView,
     TeacherForgotPasswordAPIView,
+    TeacherListAPIView,
     TeacherLoginView,
     StudentLoginView,
     StudentSSOLoginView,
@@ -48,5 +50,6 @@ urlpatterns = [
     path('admin/divisions/', DivisionListCreateAPIView.as_view(), name='division-list-create'),
     path('admin/divisions/<int:pk>/', DivisionRetrieveUpdateDestroyAPIView.as_view(), name='division-detail'),
     path('admin/teachers/add/', AdminAddTeacherAPIView.as_view(), name='admin-add-teacher'),
-
+    path('admin/teachers/', TeacherListAPIView.as_view(), name='teacher-list'),
+    path('admin/teachers/<int:pk>/', TeacherDetailAPIView.as_view(), name='teacher-detail'),
 ]

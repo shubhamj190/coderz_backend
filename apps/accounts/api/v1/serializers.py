@@ -105,3 +105,61 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"error": str(e)})
         
         return teacher
+    
+class TeacherListSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    UserName = serializers.CharField(source="user.UserName", read_only=True)
+    gender = serializers.CharField(source="user.gender", read_only=True)
+    id = serializers.IntegerField(source="user.UserId", read_only=True)
+
+    class Meta:
+        model = Teacher
+        fields = ['full_name', 'id', 'UserName', 'gender']
+
+    def get_full_name(self, obj):
+        # Combine first and last names; adjust as needed.
+        first = obj.user.FirstName or ""
+        last = obj.user.LastName or ""
+        return f"{first} {last}".strip()
+    
+class TeacherDetailSerializer(serializers.ModelSerializer):
+    # Fields from the related User model
+    FirstName = serializers.CharField(source="user.FirstName", required=False)
+    LastName = serializers.CharField(source="user.LastName", required=False)
+    gender = serializers.CharField(source="user.gender", required=False)
+    Email = serializers.EmailField(source="user.Email", required=False)
+    PhoneNumber = serializers.CharField(source="user.PhoneNumber", required=False)
+    
+    class Meta:
+        model = Teacher
+        fields = [
+            "id",               # Teacher's primary key
+            "FirstName",        # Updatable user first name
+            "LastName",         # Updatable user last name
+            "gender",           # Updatable user gender
+            "Email",            # Updatable user email
+            "PhoneNumber",      # Updatable user phone number
+            "years_of_experience",
+            "assigned_grades",
+            "assigned_divisions",
+            # "available_time_slots"
+        ]
+    
+    def update(self, instance, validated_data):
+        # Extract nested user data if present.
+        user_data = validated_data.pop("user", {})
+        
+        # Update the user fields except for UserName.
+        user = instance.user
+        for attr, value in user_data.items():
+            # Skip username update even if provided
+            if attr == "UserName":
+                continue
+            setattr(user, attr, value)
+        user.save()
+        
+        # Update Teacher-specific fields.
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance

@@ -8,6 +8,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from apps.accounts.models.grades import Division, Grade
+from core.middlewares.global_pagination import StandardResultsSetPagination
 from core.permissions.role_based import IsSpecificAdmin
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -20,8 +21,10 @@ from .serializers import (
     DivisionSerializer,
     GradeSerializer,
     TeacherCreateSerializer,
+    TeacherDetailSerializer,
+    TeacherListSerializer,
     TeacherLoginSerializer,
-    StudentLoginSerializer
+    StudentLoginSerializer,
 )
 
 from apps.accounts.models.user import Teacher, User
@@ -429,4 +432,25 @@ class AdminAddTeacherAPIView(generics.CreateAPIView):
     """
     queryset = Teacher.objects.all()
     serializer_class = TeacherCreateSerializer
+    permission_classes = [IsAuthenticated, IsSpecificAdmin]
+
+class TeacherListAPIView(generics.ListAPIView):
+    """
+    API view to list all teachers.
+    Accessible only by admin users.
+    """
+    queryset = Teacher.objects.all()
+    serializer_class = TeacherListSerializer
+    permission_classes = [IsAuthenticated, IsSpecificAdmin]
+    pagination_class = StandardResultsSetPagination
+
+    
+class TeacherDetailAPIView(generics.RetrieveUpdateAPIView):
+    """
+    API endpoint to retrieve a single teacher's details and update them.
+    The UserName field is read-only and cannot be updated.
+    Access is restricted to admin users.
+    """
+    queryset = Teacher.objects.all()
+    serializer_class = TeacherDetailSerializer
     permission_classes = [IsAuthenticated, IsSpecificAdmin]
