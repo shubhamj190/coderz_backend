@@ -162,4 +162,4 @@ class Student(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.get_full_name()} - {self.student_id}"
+        return f"{self.user.get_full_name()} - {self.id}"

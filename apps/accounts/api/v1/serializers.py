@@ -241,7 +241,6 @@ class StudentListSerializer(serializers.ModelSerializer):
     UserName = serializers.CharField(source="user.UserName", read_only=True)
     email = serializers.CharField(source="user.Email", read_only=True)
     gender = serializers.CharField(source="user.gender", read_only=True)
-    id = serializers.IntegerField(source="user.UserId", read_only=True)
 
     class Meta:
         model = Student
@@ -252,3 +251,95 @@ class StudentListSerializer(serializers.ModelSerializer):
         first = obj.user.FirstName or ""
         last = obj.user.LastName or ""
         return f"{first} {last}".strip()
+
+class StudentDetailSerializer(serializers.ModelSerializer):
+    # Nested user fields (read-only username)
+    FirstName = serializers.CharField(source="user.FirstName", required=False)
+    LastName = serializers.CharField(source="user.LastName", required=False)
+    gender = serializers.CharField(source="user.gender", required=False)
+    Email = serializers.EmailField(source="user.Email", required=False)
+    PhoneNumber = serializers.CharField(source="user.PhoneNumber", required=False)
+    
+    class Meta:
+        model = Student
+        fields = [
+            "id",                # Student's primary key
+            "FirstName",         # Updatable user first name
+            "LastName",          # Updatable user last name
+            "gender",            # Updatable user gender
+            "Email",             # Updatable user email
+            "PhoneNumber",       # Updatable user phone number
+            "date_of_birth",
+            "grade",
+            "division",
+            "roll_number",
+            "parent_name",
+            "parent_email",
+            "parent_phone",
+            "admission_number",
+            "is_active"          # Student's active status
+        ]
+    
+    def update(self, instance, validated_data):
+        # Extract nested user data if provided.
+        user_data = validated_data.pop("user", {})
+        user = instance.user
+        for attr, value in user_data.items():
+            # Skip updating the username even if provided.
+            if attr == "UserName":
+                continue
+            setattr(user, attr, value)
+        user.save()
+        
+        # Update Student-specific fields.
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+class StudentUpdateSerializer(serializers.ModelSerializer):
+    # Nested user fields:
+    UserName = serializers.CharField(source="user.UserName", read_only=True)
+    FirstName = serializers.CharField(source="user.FirstName", required=False)
+    LastName = serializers.CharField(source="user.LastName", required=False)
+    gender = serializers.CharField(source="user.gender", required=False)
+    Email = serializers.EmailField(source="user.Email", required=False)
+    PhoneNumber = serializers.CharField(source="user.PhoneNumber", required=False)
+
+    class Meta:
+        model = Student
+        fields = [
+            "UserName",         # read-only, coming from the related User model
+            "FirstName",        # updatable user first name
+            "LastName",         # updatable user last name
+            "gender",           # updatable user gender
+            "Email",            # updatable user email
+            "PhoneNumber",      # updatable user phone number
+            "date_of_birth",
+            "grade",
+            "division",
+            "roll_number",
+            "parent_name",
+            "parent_email",
+            "parent_phone",
+            "admission_number",
+            "is_active"         # student-specific active flag
+        ]
+    
+    def update(self, instance, validated_data):
+        # Extract user data from nested input, if provided.
+        user_data = validated_data.pop("user", {})
+        user = instance.user
+
+        # Update user fields except for UserName.
+        for attr, value in user_data.items():
+            if attr == "UserName":
+                continue
+            setattr(user, attr, value)
+        user.save()
+        
+        # Update remaining student fields.
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance

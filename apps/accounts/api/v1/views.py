@@ -21,7 +21,9 @@ from .serializers import (
     DivisionSerializer,
     GradeSerializer,
     StudentCreateSerializer,
+    StudentDetailSerializer,
     StudentListSerializer,
+    StudentUpdateSerializer,
     TeacherCreateSerializer,
     TeacherDetailSerializer,
     TeacherListSerializer,
@@ -474,3 +476,13 @@ class StudentListAPIView(generics.ListAPIView):
     serializer_class = StudentListSerializer
     permission_classes = [IsAuthenticated, IsSpecificAdmin]
     pagination_class = StandardResultsSetPagination
+
+class StudentDetailAPIView(generics.RetrieveUpdateAPIView):
+    """
+    API endpoint to retrieve a single teacher's details and update them.
+    The UserName field is read-only and cannot be updated.
+    Access is restricted to admin users.
+    """
+    queryset = Student.objects.all()
+    serializer_class = StudentDetailSerializer
+    permission_classes = [IsAuthenticated, IsSpecificAdmin]
