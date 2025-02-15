@@ -8,6 +8,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from apps.accounts.models.grades import Division, Grade
+from apps.accounts.tasks import process_bulk_upload_students
 from core.middlewares.global_pagination import StandardResultsSetPagination
 from core.permissions.role_based import IsSpecificAdmin
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -15,6 +16,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from templated_email import send_templated_mail
 from django.conf import settings
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from .serializers import (
     AdminLoginSerializer,
@@ -486,3 +488,25 @@ class StudentDetailAPIView(generics.RetrieveUpdateAPIView):
     queryset = Student.objects.all()
     serializer_class = StudentDetailSerializer
     permission_classes = [IsAuthenticated, IsSpecificAdmin]
+
+class BulkUploadStudentsAPIView(APIView):
+    """
+    API endpoint to bulk upload students from a CSV file.
+    The CSV must have the columns:
+    Name,Last Name,Gender,DOB,E-Mail,Grade,Division,Admission No.,Active Status
+    """
+    permission_classes = [IsSpecificAdmin]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request, *args, **kwargs):
+        csv_file = request.FILES.get("file", None)
+        if not csv_file:
+            return Response({"error": "No CSV file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            csv_data = csv_file.read().decode("utf-8-sig")
+        except Exception as e:
+            return Response({"error": f"Failed to read CSV file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Enqueue the task asynchronously
+        task = process_bulk_upload_students.delay(csv_data)
+        return Response({"message": "Bulk upload initiated.", "task_id": task.id}, status=status.HTTP_202_ACCEPTED)

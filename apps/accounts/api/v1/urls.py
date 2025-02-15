@@ -6,6 +6,7 @@ from .views import (
     AdminLoginView,
     AdminLogoutView,
     AdminSignupView,
+    BulkUploadStudentsAPIView,
     DivisionListCreateAPIView,
     DivisionRetrieveUpdateDestroyAPIView,
     GradeListCreateAPIView,
@@ -23,7 +24,6 @@ from .views import (
     StudentSSOLoginView,
     TeacherLogoutView,
     TeacherSignupView,
-
 )
 
 urlpatterns = [
@@ -60,6 +60,7 @@ urlpatterns = [
     path('admin/students/add/', AdminAddStudentAPIView.as_view(), name='admin-add-student'),
     path('admin/students', StudentListAPIView.as_view(), name='student-list'),
     path('admin/students/<int:pk>/', StudentDetailAPIView.as_view(), name='student-detail'),
+    path('students/bulk-upload/', BulkUploadStudentsAPIView.as_view(), name='students-bulk-upload'),
 
 
 ]

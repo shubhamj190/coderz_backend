@@ -3,6 +3,8 @@
 from datetime import timedelta
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -30,6 +32,7 @@ INSTALLED_APPS = [
     'apps.common',
     'apps.dashboards',
     'rest_framework_simplejwt.token_blacklist',
+    'storages',
 ]
 
 REST_FRAMEWORK = {
@@ -132,3 +135,27 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 FRONTEND_URL=os.getenv('FRONTEND_URL', 'http://localhost:8000')
+
+# Celery Configuration Options
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'  # Or your preferred 
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',  # Use the appropriate Redis server URL
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+# Optional: This is to ensure Django sessions are stored in Redis
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'
+
+DEFAULT_FILE_STORAGE = 'core.middlewares.storage_backends.AzureMediaStorage'
