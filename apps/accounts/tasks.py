@@ -4,8 +4,8 @@ from io import StringIO
 from datetime import datetime
 from celery import shared_task
 from django.db import transaction
-from accounts.models.user import User, Student
-from accounts.models.grades import Grade, Division
+from apps.accounts.models.user import User, Student
+from apps.accounts.models.grades import Grade, Division
 
 @shared_task
 def process_bulk_upload_students(csv_data):
