@@ -2,7 +2,7 @@ from django.db import models
 
 class Assessment(models.Model):
     title = models.CharField(max_length=255)
-    course = models.ForeignKey('Course', on_delete=models.CASCADE)
+    course = models.ForeignKey('courses.Course', on_delete=models.CASCADE)
     assessment_type = models.CharField(max_length=50)  # quiz, test
     duration = models.IntegerField()  # in minutes
     total_marks = models.IntegerField()
