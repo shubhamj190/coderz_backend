@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     'apps.competitions',
     'apps.communications',
     'apps.helpdesk',
-    'apps.common',
+    'apps.common.apps.AccountsConfig',
     'apps.dashboards',
     'rest_framework_simplejwt.token_blacklist',
     'storages',
