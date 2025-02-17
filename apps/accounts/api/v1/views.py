@@ -19,7 +19,6 @@ from django.conf import settings
 from rest_framework.parsers import MultiPartParser, FormParser
 
 from .serializers import (
-    AdminLoginSerializer,
     DivisionSerializer,
     GradeSerializer,
     StudentCreateSerializer,
@@ -29,8 +28,7 @@ from .serializers import (
     TeacherCreateSerializer,
     TeacherDetailSerializer,
     TeacherListSerializer,
-    TeacherLoginSerializer,
-    StudentLoginSerializer,
+    CustomTokenObtainPairSerializer
 )
 
 from apps.accounts.models.user import Student, Teacher, User
@@ -39,12 +37,19 @@ logger = logging.getLogger(__name__)
 
 # Login API views
 
-class BaseLoginView(TokenObtainPairView):
+class UnifiedLoginView(TokenObtainPairView):
     """
-    Base login view that uses the custom serializer (which is set on the subclasses)
-    and returns a JWT response with role and user_id.
+    A unified login view for all user types.
+    
+    Optionally, the client can include a "login_as" field in the request body
+    (with values like "admin", "teacher", or "student") to enforce role-specific login.
     """
+    # Use the base serializer which returns user info in serializer.user
+    serializer_class = CustomTokenObtainPairSerializer  
+
     def post(self, request, *args, **kwargs):
+        # Optionally extract role filter from request data.
+        login_as = request.data.get("login_as")  # e.g., "admin", "teacher", or "student"
         
         serializer = self.get_serializer(data=request.data)
         try:
@@ -52,13 +57,20 @@ class BaseLoginView(TokenObtainPairView):
         except Exception as e:
             logger.error(f"Login error: {str(e)}")
             return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
-
-        # Instead of calling authenticate() again, get the user from the serializer.
+        
+        # Instead of calling authenticate again, we get the user from the serializer.
         user = serializer.user
-
+        
         if not user:
             return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
-
+        
+        # If login_as is provided, ensure that user's role matches.
+        if login_as and user.role.lower() != login_as.lower():
+            return Response(
+                {"error": f"{login_as.capitalize()} access only"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         # Generate JWT tokens for the user.
         refresh = RefreshToken.for_user(user)
         response_data = {
@@ -68,37 +80,6 @@ class BaseLoginView(TokenObtainPairView):
             "user_id": user.UserId
         }
         return Response(response_data, status=status.HTTP_200_OK)
-
-
-class AdminLoginView(BaseLoginView):
-    serializer_class = AdminLoginSerializer
-
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        # If the login is successful but the user's role isn't 'admin', block access.
-        if response.status_code == 200 and response.data.get('role') != 'admin':
-            return Response({"error": "Admin access only"}, status=status.HTTP_403_FORBIDDEN)
-        return response
-
-
-class TeacherLoginView(BaseLoginView):
-    serializer_class = TeacherLoginSerializer
-
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == 200 and response.data.get('role') != 'teacher':
-            return Response({"error": "Teacher access only"}, status=status.HTTP_403_FORBIDDEN)
-        return response
-
-
-class StudentLoginView(BaseLoginView):
-    serializer_class = StudentLoginSerializer
-
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == 200 and response.data.get('role') != 'student':
-            return Response({"error": "Student access only"}, status=status.HTTP_403_FORBIDDEN)
-        return response
 
 
 class StudentSSOLoginView(APIView):
