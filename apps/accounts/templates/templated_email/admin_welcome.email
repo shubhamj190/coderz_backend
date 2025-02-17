@@ -1,0 +1,57 @@
+{% block subject %}
+    {{ subject }}
+{% endblock %}
+{% block plain %}
+
+{% endblock %}
+
+{% block html %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Password Reset Request</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border: 1px solid #dddddd;
+            border-radius: 5px;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #1E90FF;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #777777;
+        }
+    </style>
+</head>
+<body>
+    <body style="font-family: Arial, sans-serif; font-size: 14px; color: #333;">
+        <p>Hi {{ first_name }} {{ last_name }},</p>
+        <p>Your admin account has been successfully created.</p>
+        <p>Your username is: <strong>{{ username }}</strong></p>
+        <p>Thank you for joining our platform.</p>
+        <p>Best regards,</p>
+        <p>The Team</p>
+    </body>
+</body>
+</html>
+{% endblock %}

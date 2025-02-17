@@ -2,8 +2,6 @@ from django.urls import path
 from .views import (
     AdminAddStudentAPIView,
     AdminAddTeacherAPIView,
-    AdminForgotPasswordAPIView,
-    AdminLogoutView,
     AdminSignupView,
     BulkUploadStudentsAPIView,
     DivisionListCreateAPIView,
@@ -12,35 +10,26 @@ from .views import (
     GradeRetrieveUpdateDestroyAPIView,
     ResetPasswordAPIView,
     StudentDetailAPIView,
-    StudentForgotPasswordAPIView,
     StudentListAPIView,
-    StudentLogoutView,
     TeacherDetailAPIView,
-    TeacherForgotPasswordAPIView,
     TeacherListAPIView,
     StudentSSOLoginView,
-    TeacherLogoutView,
     TeacherSignupView,
+    UnifiedForgotPasswordAPIView,
     UnifiedLoginView,
+    UnifiedLogoutView,
 )
 
 urlpatterns = [
-    # login endpoints
+    # auth endpoints
     path('login/', UnifiedLoginView.as_view(), name='login'),
     path('student/sso-login/', StudentSSOLoginView.as_view(), name='student_sso_login'),
+    path('logout/', UnifiedLogoutView.as_view(), name='logout'),
+    path('forgot-password/', UnifiedForgotPasswordAPIView.as_view(), name='forgot-password'),
+    path('reset-password/<uidb64>/<token>/', ResetPasswordAPIView.as_view(), name='reset-password'),
     # signup endpoints
     path('admin/signup/', AdminSignupView.as_view(), name='admin-signup'),
-    path('teacher/signup/', TeacherSignupView.as_view(), name='teacher-signup'),
-    # logout endpoints
-    path('admin/logout/', AdminLogoutView.as_view(), name='admin-logout'),
-    path('teacher/logout/', TeacherLogoutView.as_view(), name='teacher-logout'),
-    path('student/logout/', StudentLogoutView.as_view(), name='student-logout'),
-    # forgot password endpoints
-    path('forgot-password/admin/', AdminForgotPasswordAPIView.as_view(), name='admin-forgot-password'),
-    path('forgot-password/teacher/', TeacherForgotPasswordAPIView.as_view(), name='teacher-forgot-password'),
-    path('forgot-password/student/', StudentForgotPasswordAPIView.as_view(), name='student-forgot-password'),
-    # The reset password endpoint accepts uidb64 and token as URL parameters.
-    path('reset-password/<uidb64>/<token>/', ResetPasswordAPIView.as_view(), name='reset-password'),
+    # path('teacher/signup/', TeacherSignupView.as_view(), name='teacher-signup'),
     # Grade endpoints
     path('admin/grades/', GradeListCreateAPIView.as_view(), name='grade-list-create'),
     path('admin/grades/<int:pk>/', GradeRetrieveUpdateDestroyAPIView.as_view(), name='grade-detail'),

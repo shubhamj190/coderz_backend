@@ -108,36 +108,60 @@ class StudentSSOLoginView(APIView):
 # Signup API views
 
 class AdminSignupView(APIView):
-
     permission_classes = [AllowAny]
 
     def post(self, request):
-        # Your signup logic here.
         data = request.data
 
-        UserName = data.get('UserName')
         email = data.get('email')
         password = data.get('password')
         phone = data.get('phone', None)
+        first_name = data.get('first_name', None)
+        last_name = data.get('last_name', None)
+        gender = data.get('gender', None)
 
-        if not UserName or not email or not password:
-            return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
+        if not email or not password:
+            return Response({"error": "Missing required fields: email and password are required."},
+                            status=status.HTTP_400_BAD_REQUEST)
         
-        # check if the user already exists
-        if User.objects.filter(UserName=UserName).exists():
-            return Response({"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # check if the user already exists email
+        # Check if a user with the given email already exists.
         if User.objects.filter(Email=email).exists():
-            return Response({"error": "Email already exists"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Email already exists."},
+                            status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            user = User.objects.create_user(UserName, email, password, PhoneNumber=phone, role='admin')
+            # Create the user without providing a username; the custom manager auto-generates it.
+            user = User.objects.create_user(
+                UserName=None,
+                Email=email,
+                password=password,
+                PhoneNumber=phone,
+                FirstName=first_name,
+                LastName=last_name,
+                gender = gender,
+                role='admin'
+            )
+            # Prepare context for the welcome email template.
+            context = {
+                "username": user.UserName,
+                "first_name": user.FirstName,
+                "last_name": user.LastName,
+            }
+            
+            # Send a welcome email using send_templated_mail.
+            send_templated_mail(
+                template_name="admin_welcome",  # Your email template name
+                recipient_list=[email],
+                context=context,
+                from_email=settings.DEFAULT_FROM_EMAIL
+            )
         except Exception as e:
             logger.error(f"Admin signup error: {str(e)}")
-            return Response({"error": "Error creating user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": "Error creating user"}, 
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        return Response({"message": "Admin signup successful"}, status=status.HTTP_201_CREATED)
+        return Response({"message": "Admin signup successful"}, 
+                        status=status.HTTP_201_CREATED)
 
 class TeacherSignupView(APIView):
 
@@ -173,10 +197,11 @@ class TeacherSignupView(APIView):
     
 # logout API views
 
-class BaseLogoutView(APIView):
+class UnifiedLogoutView(APIView):
     """
-    Base logout view that expects a refresh token in the request data,
-    verifies that it belongs to the authenticated user, and blacklists it.
+    Unified logout view for all user roles.
+    Expects a refresh token in the request body and blacklists it,
+    ensuring that the token belongs to the currently authenticated user.
     """
     permission_classes = [IsAuthenticated]
 
@@ -189,8 +214,7 @@ class BaseLogoutView(APIView):
             )
         try:
             token = RefreshToken(refresh_token)
-            # Verify that the token's user_id matches the authenticated user.
-            # Note: Make sure your SIMPLE_JWT settings use your custom field if needed.
+            # Verify the token's user_id matches the authenticated user.
             if token.payload.get("user_id") != request.user.UserId:
                 return Response(
                     {"error": "The token does not belong to the authenticated user."},
@@ -206,90 +230,59 @@ class BaseLogoutView(APIView):
                 {"error": "Invalid token", "details": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-class AdminLogoutView(BaseLogoutView):
-    def post(self, request, *args, **kwargs):
-        if request.user.role != "admin":
-            return Response(
-                {"error": "Only admin users can access this endpoint."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        return super().post(request, *args, **kwargs)
-
-class TeacherLogoutView(BaseLogoutView):
-    def post(self, request, *args, **kwargs):
-        if request.user.role != "teacher":
-            return Response(
-                {"error": "Only teacher users can access this endpoint."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        return super().post(request, *args, **kwargs)
-    
-class StudentLogoutView(BaseLogoutView):
-    def post(self, request, *args, **kwargs):
-        if request.user.role != "student":
-            return Response(
-                {"error": "Only student users can access this endpoint."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        return super().post(request, *args, **kwargs)
     
 # forgot password API views
 
-class BaseForgotPasswordAPIView(APIView):
-    permission_classes = [AllowAny]
+class UnifiedForgotPasswordAPIView(APIView):
     """
-    Base view for forgot password functionality.
+    A unified forgot password view for all user roles.
     Expects a POST request with an "email" field.
-    Generates a password reset token and sends an email using a templated email.
-    Subclasses should set:
-        - expected_role (e.g. "admin", "teacher", or "student")
-        - template_name (the name of the email template to use)
+    Looks up the user and, based on their role, sends a password reset email
+    using the appropriate email template.
     """
+    permission_classes = [AllowAny]
+
     def post(self, request, *args, **kwargs):
         email = request.data.get("email")
         if not email:
-            return Response(
-                {"error": "Email is required."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Look up the user by email.
             user = User.objects.get(Email=email)
         except User.DoesNotExist:
-            # Return the same generic response to avoid email enumeration.
-            return Response(
-                {"message": "If the email is valid, you will receive password reset instructions."},
-                status=status.HTTP_200_OK
-            )
+            # Do not reveal whether the email exists
+            return Response({"message": "If the email is valid, you will receive password reset instructions."},
+                            status=status.HTTP_200_OK)
 
-        # Verify that the user's role matches the expected role.
-        if hasattr(self, "expected_role") and user.role != self.expected_role:
-            return Response(
-                {"error": "Invalid user type."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # Determine which email template to use based on the user's role
+        role = user.role.lower()
+        if role == "admin":
+            template_name = "admin_forgot_password"
+        elif role == "teacher":
+            template_name = "teacher_forgot_password"
+        elif role == "student":
+            template_name = "student_forgot_password"
+        else:
+            template_name = "default_forgot_password"
 
-        # Generate token and uid
+        # Generate token and UID for password reset
         token_generator = PasswordResetTokenGenerator()
         token = token_generator.make_token(user)
         uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
         
-        # Construct the reset URL.
-        # FRONTEND_URL should be defined in your settings.py, for example: "http://your-frontend-domain"
+        # Construct the reset URL; ensure FRONTEND_URL is defined in your settings
         reset_url = f"{settings.FRONTEND_URL}/api/v1/accounts/reset-password/{uidb64}/{token}/"
         
-        # Prepare the context for the email template.
         context = {
+            "subject": "Password Reset",
             "username": user.UserName,
             "reset_url": reset_url,
             "user_role": user.role,
         }
         
-        # Use the send_templated_email library.
+        # Send the email using the templated email function.
         send_templated_mail(
-            template_name=self.template_name,  # e.g., "admin_forgot_password"
+            template_name=template_name,
             recipient_list=[user.Email],
             context=context,
             from_email=settings.DEFAULT_FROM_EMAIL
@@ -299,21 +292,6 @@ class BaseForgotPasswordAPIView(APIView):
             {"message": "If the email is valid, you will receive password reset instructions."},
             status=status.HTTP_200_OK
         )
-
-
-class AdminForgotPasswordAPIView(BaseForgotPasswordAPIView):
-    expected_role = "admin"
-    template_name = "admin_forgot_password"  # This should match your template file name/path
-
-
-class TeacherForgotPasswordAPIView(BaseForgotPasswordAPIView):
-    expected_role = "teacher"
-    template_name = "teacher_forgot_password"
-
-
-class StudentForgotPasswordAPIView(BaseForgotPasswordAPIView):
-    expected_role = "student"
-    template_name = "student_forgot_password"
 
 # reset password API views
 

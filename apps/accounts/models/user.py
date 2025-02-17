@@ -81,6 +81,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     FirstName = models.CharField(max_length=50, default='', blank=True, null=True)
     LastName = models.CharField(max_length=50, default='', blank=True, null=True)
     UserName = models.CharField(max_length=150, unique=True)
+    # plain_password = models.CharField(max_length=128, blank=True, null=True)
     NormalizedUserName = models.CharField(max_length=150, unique=True, blank=True)
     Email = models.EmailField(unique=True)
     NormalizedEmail = models.EmailField(unique=True, blank=True)
