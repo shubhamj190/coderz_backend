@@ -2,6 +2,7 @@ from django.urls import path
 from .views import (
     AdminAddStudentAPIView,
     AdminAddTeacherAPIView,
+    AdminChangePasswordView,
     AdminSignupView,
     BulkUploadStudentsAPIView,
     DivisionListCreateAPIView,
@@ -27,6 +28,7 @@ urlpatterns = [
     path('logout/', UnifiedLogoutView.as_view(), name='logout'),
     path('forgot-password/', UnifiedForgotPasswordAPIView.as_view(), name='forgot-password'),
     path('reset-password/<uidb64>/<token>/', ResetPasswordAPIView.as_view(), name='reset-password'),
+    path('admin/change-password/', AdminChangePasswordView.as_view(), name='change-password'),
     # signup endpoints
     path('admin/signup/', AdminSignupView.as_view(), name='admin-signup'),
     # path('teacher/signup/', TeacherSignupView.as_view(), name='teacher-signup'),

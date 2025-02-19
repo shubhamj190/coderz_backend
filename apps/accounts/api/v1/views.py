@@ -346,6 +346,63 @@ class ResetPasswordAPIView(APIView):
             status=status.HTTP_200_OK
         )
     
+class AdminChangePasswordView(APIView):
+    """
+    API for logged-in admins to change their password.
+    """
+    permission_classes = [IsAuthenticated]  # Only authenticated users can access
+
+    def post(self, request):
+        user = request.user
+
+        # Ensure the user is an admin
+        if user.role != "admin":
+            return Response(
+                {"error": "Only admins can change passwords."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        data = request.data
+        old_password = data.get("old_password")
+        new_password = data.get("new_password")
+        confirm_password = data.get("confirm_password")
+
+        # Validate required fields
+        if not old_password or not new_password or not confirm_password:
+            return Response(
+                {"error": "All fields are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if the old password is correct
+        if not user.check_password(old_password):
+            return Response(
+                {"error": "Old password is incorrect."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if new passwords match
+        if new_password != confirm_password:
+            return Response(
+                {"error": "New passwords do not match."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate password strength (Optional: Add regex for complexity)
+        if len(new_password) < 8:
+            return Response(
+                {"error": "New password must be at least 8 characters long."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Update the password
+        user.set_password(new_password)
+        user.save()
+
+        return Response(
+            {"message": "Password changed successfully."},
+            status=status.HTTP_200_OK
+        )
 # Grade Views
 class GradeListCreateAPIView(generics.ListCreateAPIView):
     """
