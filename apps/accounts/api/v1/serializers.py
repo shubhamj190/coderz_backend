@@ -1,7 +1,7 @@
 # apps/accounts/api/v1/auth/serializers.py
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
-from apps.accounts.models.user import Student, User, Teacher
+from apps.accounts.models.user import UserDetails, User
 from apps.accounts.models import Grade, Division
 from django.db import transaction
 
@@ -29,10 +29,10 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, style={'input_type': 'password'})
     first_name = serializers.CharField(write_only=True)
     last_name = serializers.CharField(write_only=True)
-    gender = serializers.ChoiceField(choices=User.GENDER_CHOICES, write_only=True)
+    gender = serializers.ChoiceField(choices=UserDetails.GENDER_CHOICES, write_only=True)
 
     class Meta:
-        model = Teacher
+        model = UserDetails
         # Include teacher-specific fields as well as the extra user fields
         fields = [
             "assigned_grades",     # Expect a list of grade IDs
@@ -70,7 +70,7 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
                 )
                 
                 # Create the Teacher record linking to the user.
-                teacher = Teacher.objects.create(user=user, **validated_data)
+                teacher = UserDetails.objects.create(user=user, **validated_data)
                 
                 # Assign many-to-many relationships using .set() if data is provided.
                 if assigned_grades is not None:
@@ -93,7 +93,7 @@ class TeacherListSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source="user.UserId", read_only=True)
 
     class Meta:
-        model = Teacher
+        model = UserDetails
         fields = ['full_name', 'email','id', 'UserName', 'gender', 'is_active']
 
     def get_full_name(self, obj):
@@ -111,7 +111,7 @@ class TeacherDetailSerializer(serializers.ModelSerializer):
     PhoneNumber = serializers.CharField(source="user.PhoneNumber", required=False)
     
     class Meta:
-        model = Teacher
+        model = UserDetails
         fields = [
             "id",               # Teacher's primary key
             "FirstName",        # Updatable user first name
@@ -150,10 +150,10 @@ class StudentCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, style={'input_type': 'password'}, required=False)
     first_name = serializers.CharField(write_only=True)
     last_name = serializers.CharField(write_only=True)
-    gender = serializers.ChoiceField(choices=User.GENDER_CHOICES, write_only=True)
+    gender = serializers.ChoiceField(choices=UserDetails.GENDER_CHOICES, write_only=True)
     
     class Meta:
-        model = Student
+        model = UserDetails
         fields = [
             "date_of_birth",
             "grade",           # PK or instance of Grade
@@ -200,7 +200,7 @@ class StudentCreateSerializer(serializers.ModelSerializer):
             )
             
             # Create the Student record linking to the user.
-            student = Student.objects.create(
+            student = UserDetails.objects.create(
                 user=user,
                 FirstName=first_name,
                 LastName=last_name,
@@ -222,7 +222,7 @@ class StudentListSerializer(serializers.ModelSerializer):
     gender = serializers.CharField(source="user.gender", read_only=True)
 
     class Meta:
-        model = Student
+        model = UserDetails
         fields = ['full_name', 'email','id', 'UserName', 'gender', 'is_active','grade','division']
 
     def get_full_name(self, obj):
@@ -240,7 +240,7 @@ class StudentDetailSerializer(serializers.ModelSerializer):
     PhoneNumber = serializers.CharField(source="user.PhoneNumber", required=False)
     
     class Meta:
-        model = Student
+        model = UserDetails
         fields = [
             "id",                # Student's primary key
             "FirstName",         # Updatable user first name
@@ -286,7 +286,7 @@ class StudentUpdateSerializer(serializers.ModelSerializer):
     PhoneNumber = serializers.CharField(source="user.PhoneNumber", required=False)
 
     class Meta:
-        model = Student
+        model = UserDetails
         fields = [
             "UserName",         # read-only, coming from the related User model
             "FirstName",        # updatable user first name

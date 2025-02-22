@@ -33,7 +33,7 @@ class LearningContent(models.Model):
 
 
 class StudentCourseEnrollment(models.Model):
-    student = models.ForeignKey("accounts.Student", on_delete=models.CASCADE)
+    student = models.ForeignKey("accounts.UserDetails", on_delete=models.CASCADE)
     course = models.ForeignKey("Course", on_delete=models.CASCADE)
     enrollment_date = models.DateTimeField(auto_now_add=True)
     completion_status = models.CharField(

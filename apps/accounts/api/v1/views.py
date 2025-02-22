@@ -31,7 +31,7 @@ from .serializers import (
     CustomTokenObtainPairSerializer
 )
 
-from apps.accounts.models.user import Student, Teacher, User
+from apps.accounts.models.user import User, UserDetails
 
 logger = logging.getLogger(__name__)
 
@@ -452,7 +452,7 @@ class AdminAddTeacherAPIView(generics.CreateAPIView):
     API endpoint for admin users to add a new teacher.
     This creates both the user record (with role 'teacher' and gender) and the teacher profile.
     """
-    queryset = Teacher.objects.all()
+    queryset = UserDetails.objects.all()
     serializer_class = TeacherCreateSerializer
     permission_classes = [IsAuthenticated, IsSpecificAdmin]
 
@@ -461,7 +461,7 @@ class TeacherListAPIView(generics.ListAPIView):
     API view to list all teachers.
     Accessible only by admin users.
     """
-    queryset = Teacher.objects.all()
+    queryset = UserDetails.objects.all()
     serializer_class = TeacherListSerializer
     permission_classes = [IsAuthenticated, IsSpecificAdmin]
     pagination_class = StandardResultsSetPagination
@@ -472,7 +472,7 @@ class TeacherDetailAPIView(generics.RetrieveUpdateAPIView):
     The UserName field is read-only and cannot be updated.
     Access is restricted to admin users.
     """
-    queryset = Teacher.objects.all()
+    queryset = UserDetails.objects.all()
     serializer_class = TeacherDetailSerializer
     permission_classes = [IsAuthenticated, IsSpecificAdmin]
 
@@ -481,7 +481,7 @@ class AdminAddStudentAPIView(generics.CreateAPIView):
     API endpoint for admin users to add a new student.
     This creates both a User record (with role 'student') and a Student profile.
     """
-    queryset = Student.objects.all()
+    queryset = UserDetails.objects.all()
     serializer_class = StudentCreateSerializer
     permission_classes = [IsAuthenticated, IsSpecificAdmin]
 
@@ -490,7 +490,7 @@ class StudentListAPIView(generics.ListAPIView):
     API view to list all students.
     Accessible only by admin users.
     """
-    queryset = Student.objects.all()
+    queryset = UserDetails.objects.all()
     serializer_class = StudentListSerializer
     permission_classes = [IsAuthenticated, IsSpecificAdmin]
     pagination_class = StandardResultsSetPagination
@@ -501,7 +501,7 @@ class StudentDetailAPIView(generics.RetrieveUpdateAPIView):
     The UserName field is read-only and cannot be updated.
     Access is restricted to admin users.
     """
-    queryset = Student.objects.all()
+    queryset = UserDetails.objects.all()
     serializer_class = StudentDetailSerializer
     permission_classes = [IsAuthenticated, IsSpecificAdmin]
 

@@ -11,7 +11,7 @@ class Project(models.Model):
 
 class ProjectSubmission(models.Model):
     project = models.ForeignKey('Project', on_delete=models.CASCADE)
-    student = models.ForeignKey('accounts.Student', on_delete=models.CASCADE)
+    student = models.ForeignKey('accounts.UserDetails', on_delete=models.CASCADE)
     submission_file = models.FileField(upload_to='project_submissions/')
     submitted_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20)  # submitted, evaluated

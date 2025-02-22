@@ -12,7 +12,7 @@ class Board(models.Model):
     ModifiedBy = models.CharField(max_length=50, blank=True, null=True, db_column='ModifiedBy')
 
     class Meta:
-        db_table = 'dbo.Board'
+        db_table = 'Board'
         managed = False  # Set to False if this table already exists and should not be managed by Django
     
     def save(self, *args, **kwargs):
@@ -30,7 +30,7 @@ class Grade(models.Model):
     IsActive = models.BooleanField(default=True, db_column='IsActive')
     
     class Meta:
-        db_table = 'dbo.Grade'
+        db_table = 'Grade'
         managed = False  # Set to False if the table is managed externally
 
     def save(self, *args, **kwargs):
@@ -45,7 +45,7 @@ class Division(models.Model):
     name = models.CharField(max_length=50)  # e.g., "A", "B", "C"
 
     class Meta:
-        db_table = 'dbo.Division'
+        db_table = 'Division'
         managed = False 
         unique_together = ('grade', 'name')
         verbose_name = "Division"

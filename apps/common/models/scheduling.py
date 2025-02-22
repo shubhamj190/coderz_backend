@@ -3,7 +3,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from apps.accounts.models.user import Teacher  # Adjust import paths as needed
+from apps.accounts.models.user import UserDetails  # Adjust import paths as needed
 from apps.accounts.models.grades import Grade, Division  # Adjust import paths as needed
 from apps.courses.models.courses import Course  # Adjust import path as needed
 
@@ -92,7 +92,7 @@ class ScheduleSlot(models.Model):
     day = models.ForeignKey(WeekDay, on_delete=models.CASCADE)
     time_slot = models.ForeignKey(TimeSlot, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
+    teacher = models.ForeignKey(UserDetails, on_delete=models.CASCADE)
 
     class Meta:
         unique_together = ['schedule', 'day', 'time_slot']

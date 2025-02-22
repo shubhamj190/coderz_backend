@@ -4,7 +4,7 @@ from io import StringIO
 from datetime import datetime
 from celery import shared_task
 from django.db import transaction
-from apps.accounts.models.user import User, Student
+from apps.accounts.models.user import UserDetails, User
 from apps.accounts.models.grades import Grade, Division
 
 @shared_task
@@ -71,7 +71,7 @@ def process_bulk_upload_students(csv_data):
                     user.save()
 
                 # Create or update Student record
-                student, s_created = Student.objects.get_or_create(
+                student, s_created = UserDetails.objects.get_or_create(
                     user=user,
                     defaults={
                         "date_of_birth": date_of_birth,

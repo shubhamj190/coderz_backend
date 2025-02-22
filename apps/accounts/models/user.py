@@ -72,7 +72,7 @@ class Institution(models.Model):
     # Add other fields if required.
 
     class Meta:
-        db_table = 'dbo.Institutions'
+        db_table = 'Institutions'
         managed = False
 
     def __str__(self):
@@ -115,7 +115,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.UserId
 
     class Meta:
-        db_table = 'dbo.UserIdentity'
+        db_table = 'UserIdentity'
         managed = False  # Use the existing table without migrations
 
 class UserDetails(models.Model):
@@ -168,7 +168,7 @@ class UserDetails(models.Model):
     Gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True, db_column='Gender')
 
     class Meta:
-        db_table = 'dbo.UserDetails'
+        db_table = 'UserDetails'
         managed = False  # Do not manage this table via Django migrations
 
     def __str__(self):
@@ -188,7 +188,7 @@ class Location(models.Model):
     # Add additional fields if needed
 
     class Meta:
-        db_table = 'dbo.Location'
+        db_table = 'Location'
         managed = False
 
     def save(self, *args, **kwargs):
@@ -216,7 +216,7 @@ class GroupMaster(models.Model):
     # Add additional fields if needed
 
     class Meta:
-        db_table = 'dbo.GroupMaster'
+        db_table = 'GroupMaster'
         managed = False
 
     def save(self, *args, **kwargs):
@@ -229,7 +229,7 @@ class GroupMaster(models.Model):
 
 class UserGroup(models.Model):
     """
-    Represents the user group membership from the dbo.UserGroup table.
+    Represents the user group membership from the UserGroup table.
     The composite key is enforced using unique_together on:
     (UserId, LocationId, GroupId, IsDeleted)
     """
@@ -265,7 +265,7 @@ class UserGroup(models.Model):
         super().save(*args, **kwargs)
 
     class Meta:
-        db_table = 'dbo.UserGroup'
+        db_table = 'UserGroup'
         managed = False  # Tells Django not to manage (create/modify) this existing table.
         unique_together = (('user', 'LocationId', 'GroupId', 'IsDeleted'),)
         verbose_name = "User Group"
