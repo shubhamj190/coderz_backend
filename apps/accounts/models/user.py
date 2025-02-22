@@ -66,38 +66,36 @@ class CustomUserManager(BaseUserManager):
 
         return self.create_user(UserName, Email, password, **extra_fields)
 
-class User(AbstractBaseUser, PermissionsMixin):
-    USER_TYPE_CHOICES = [
-        ('teacher', 'Teacher'),
-        ('admin', 'Admin'),
-        ('student', 'Student'),
-    ]
-    GENDER_CHOICES = [
-        ('male', 'Male'),
-        ('female', 'Female'),
-    ]
+class Institution(models.Model):
+    # Minimal representation for the FK reference; adjust as needed.
+    InstitutionId = models.IntegerField(primary_key=True, db_column='InstitutionId')
+    # Add other fields if required.
 
-    UserId = models.AutoField(primary_key=True)
-    FirstName = models.CharField(max_length=50, default='', blank=True, null=True)
-    LastName = models.CharField(max_length=50, default='', blank=True, null=True)
-    UserName = models.CharField(max_length=150, unique=True)
-    # plain_password = models.CharField(max_length=128, blank=True, null=True)
-    NormalizedUserName = models.CharField(max_length=150, unique=True, blank=True)
-    Email = models.EmailField(unique=True)
-    NormalizedEmail = models.EmailField(unique=True, blank=True)
-    EmailConfirmed = models.BooleanField(default=False)
-    PhoneNumber = models.CharField(max_length=15, blank=True, null=True)
-    AltPhoneNumber = models.CharField(max_length=15, blank=True, null=True)
-    PhoneNumberConfirmed = models.BooleanField(default=False)
-    TwoFactorEnabled = models.BooleanField(default=False)
-    LockoutEnd = models.DateTimeField(null=True, blank=True)
-    LockoutEnabled = models.BooleanField(default=True)
-    AccessFailedCount = models.IntegerField(default=0)
-    InstitutionId = models.IntegerField(null=True, blank=True)
-    IsDeleted = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(auto_now_add=True)
-    role = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='student')
-    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='')
+    class Meta:
+        db_table = 'dbo.Institutions'
+        managed = False
+
+    def __str__(self):
+        return str(self.InstitutionId)
+class User(AbstractBaseUser, PermissionsMixin):
+    UserId = models.CharField(primary_key=True, max_length=450, db_column='UserId')
+    UserName = models.CharField(max_length=256, unique=True, null=True, blank=True, db_column='UserName')
+    NormalizedUserName = models.CharField(max_length=256, unique=True, null=True, blank=True, db_column='NormalizedUserName')
+    Email = models.CharField(max_length=256, unique=True, null=True, blank=True, db_column='Email')
+    NormalizedEmail = models.CharField(max_length=256, unique=True, null=True, blank=True, db_column='NormalizedEmail')
+    EmailConfirmed = models.BooleanField(default=False, db_column='EmailConfirmed')
+    PasswordHash = models.TextField(null=True, blank=True, db_column='PasswordHash')
+    SecurityStamp = models.TextField(null=True, blank=True, db_column='SecurityStamp')
+    ConcurrencyStamp = models.TextField(null=True, blank=True, db_column='ConcurrencyStamp')
+    PhoneNumber = models.TextField(null=True, blank=True, db_column='PhoneNumber')
+    PhoneNumberConfirmed = models.BooleanField(default=False, db_column='PhoneNumberConfirmed')
+    TwoFactorEnabled = models.BooleanField(default=False, db_column='TwoFactorEnabled')
+    LockoutEnd = models.DateTimeField(null=True, blank=True, db_column='LockoutEnd')
+    LockoutEnabled = models.BooleanField(default=True, db_column='LockoutEnabled')
+    AccessFailedCount = models.IntegerField(default=0, db_column='AccessFailedCount')
+    InstitutionId = models.ForeignKey(Institution, on_delete=models.CASCADE, db_column='InstitutionId')
+    IsActive = models.BooleanField(default=True, db_column='IsActive')
+    IsDeleted = models.BooleanField(default=False, db_column='IsDeleted')
 
     USERNAME_FIELD = 'UserName'
     REQUIRED_FIELDS = ['Email']
@@ -110,57 +108,168 @@ class User(AbstractBaseUser, PermissionsMixin):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.UserName} ({self.role})"
+        return f"{self.UserName}"
 
     @property
     def id(self):
         return self.UserId
-    
-    def get_full_name(self):
-        return f"{self.FirstName} {self.LastName}"
 
     class Meta:
-        db_table = 'usersidentity'
+        db_table = 'dbo.UserIdentity'
+        managed = False  # Use the existing table without migrations
 
+class UserDetails(models.Model):
+    # Use a OneToOneField with primary_key=True to share the same primary key as the User table.
+    USER_TYPE_CHOICES = [
+        ('Learner', 'Learner'),
+        ('Teacher', 'Teacher'),
+        ('Admin', 'Admin'),
+    ]
+    GENDER_CHOICES = [
+        ('male', 'Male'),
+        ('female', 'Female'),
+    ]
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        db_column='UserId',
+        related_name='details'
+    )
+    ContactNo = models.CharField(max_length=50, blank=True, null=True, db_column='ContactNo')
+    AdditionalContactNo = models.CharField(max_length=50, blank=True, null=True, db_column='AdditionalContactNo')
+    Address = models.TextField(blank=True, null=True, db_column='Address')
+    Location = models.CharField(max_length=100, blank=True, null=True, db_column='Location')
+    Pincode = models.CharField(max_length=50, blank=True, null=True, db_column='Pincode')
+    CityCode = models.CharField(max_length=50, blank=True, null=True, db_column='CityCode')
+    StateCode = models.CharField(max_length=50, blank=True, null=True, db_column='StateCode')
+    CountryCode = models.CharField(max_length=10, blank=True, null=True, db_column='CountryCode')
+    LastUsedDevice = models.CharField(max_length=50, blank=True, null=True, db_column='LastUsedDevice')
+    PromoCode = models.CharField(max_length=10, blank=True, null=True, db_column='PromoCode')
+    PromoRefCode = models.CharField(max_length=10, blank=True, null=True, db_column='PromoRefCode')
+    ModifiedOn = models.DateTimeField(blank=True, null=True, db_column='ModifiedOn')
+    IsActive = models.BooleanField(default=True, db_column='IsActive')
+    IsDeleted = models.BooleanField(default=False, db_column='IsDeleted')
+    CustomerGST = models.CharField(max_length=500, blank=True, null=True, db_column='CustomerGST')
+    UserSource = models.CharField(max_length=50, blank=True, null=True, db_column='UserSource')
+    SchoolName = models.CharField(max_length=100, blank=True, null=True, db_column='SchoolName')
+    BoardId = models.ForeignKey('accounts.Board', on_delete=models.CASCADE, blank=True, null=True, db_column='BoardID')
+    GradeId = models.ForeignKey(Grade, on_delete=models.CASCADE, blank=True, null=True, db_column='GradeId')
+    DivisionId = models.ForeignKey(Division, on_delete=models.CASCADE, blank=True, null=True, db_column='DivisionId')
+    QuestId = models.CharField(max_length=50, blank=True, null=True, db_column='QuestId')
+    UserType = models.CharField(max_length=50, choices=USER_TYPE_CHOICES, blank=True, null=True, db_column='UserType')
+    FirstName = models.CharField(max_length=50, blank=True, null=True, db_column='FirstName')
+    MiddleName = models.CharField(max_length=50, blank=True, null=True, db_column='MiddleName')
+    LastName = models.CharField(max_length=50, blank=True, null=True, db_column='LastName')
+    LastQuestAccessed = models.CharField(max_length=50, blank=True, null=True, db_column='LastQuestAccessed')
+    IsDirectUser = models.BooleanField(default=False, db_column='IsDirectUser')
+    UTMData = models.CharField(max_length=1000, blank=True, null=True, db_column='UTMData')
+    AdmissionNo = models.CharField(max_length=500, blank=True, null=True, db_column='AdmissionNo')
+    Gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True, db_column='Gender')
 
-class Teacher(models.Model):
-    user = models.OneToOneField('User', on_delete=models.CASCADE, related_name='teacher_profile')
-    FirstName = models.CharField(max_length=50, default='', blank=True, null=True)
-    LastName = models.CharField(max_length=50, default='', blank=True, null=True)
-    employee_id = models.CharField(max_length=50, unique=True)
-    specialization = models.CharField(max_length=100)  # e.g., Python, Scratch, Web Development
-    qualification = models.CharField(max_length=255)
-    years_of_experience = models.IntegerField(default=0)
-    assigned_grades = models.ManyToManyField(Grade, related_name='teachers')
-    assigned_divisions = models.ManyToManyField(Division, related_name='teachers')
-    is_active = models.BooleanField(default=True)
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    class Meta:
+        db_table = 'dbo.UserDetails'
+        managed = False  # Do not manage this table via Django migrations
 
     def __str__(self):
-        return f"{self.user.get_full_name()} - {self.user.UserName}"
+        return f"Details for {self.user.UserName}"
     
+class Location(models.Model):
+    LID = models.AutoField(primary_key=True, db_column='LID')
+    LocationId = models.CharField(max_length=50, null=True, blank=True, db_column='LocationId')
+    LocationName = models.CharField(max_length=100, db_column='LocationName')
+    IsActive = models.BooleanField(db_column='IsActive')
+    IsDeleted = models.BooleanField(db_column='IsDeleted')
+    InstitutionId = models.IntegerField(db_column='InstitutionId')
+    DoNotTrack = models.BooleanField(null=True, blank=True, db_column='DoNotTrack')
+    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn')
+    IsErpUsed = models.BooleanField(null=True, blank=True, db_column='IsErpUsed')
+    ERP_API_Url = models.TextField(null=True, blank=True, db_column='ERP_API_Url')
+    # Add additional fields if needed
 
-class Student(models.Model):
-    user = models.OneToOneField('User', on_delete=models.CASCADE, related_name='student_profile')
-    FirstName = models.CharField(max_length=50, default='', blank=True, null=True)
-    LastName = models.CharField(max_length=50, default='', blank=True, null=True)
-    date_of_birth = models.DateField()
-    grade = models.ForeignKey('accounts.Grade', on_delete=models.CASCADE)
-    division = models.ForeignKey('accounts.Division', on_delete=models.CASCADE)
-    roll_number = models.CharField(max_length=20, null=True, blank=True,default='')
-    parent_name = models.CharField(max_length=255, null=True, blank=True,default='')
-    parent_email = models.EmailField(null=True, blank=True,default='')
-    parent_phone = models.CharField(max_length=20,null=True, blank=True,default='')
-    admission_number = models.CharField(max_length=50)
-    
-    # For tracking student progress
-    # enrolled_courses = models.ManyToManyField('grade.Course', through='StudentCourseEnrollment')
-    is_active = models.BooleanField(default=True)
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    class Meta:
+        db_table = 'dbo.Location'
+        managed = False
+
+    def save(self, *args, **kwargs):
+        self.LocationId = self.LID
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.user.get_full_name()} - {self.id}"
+        return str(self.LID)
+
+
+class GroupMaster(models.Model):
+    GID = models.AutoField(primary_key=True, db_column='GID')
+    GroupId = models.CharField(max_length=100, null=True, blank=True, db_column='GroupId')
+    GroupName = models.CharField(max_length=255, db_column='GroupName')
+    GroupShortName = models.CharField(max_length=255, null=True, blank=True, db_column='GroupShortName')
+    LocationId = models.IntegerField(db_column='LocationId')
+    QuestId = models.CharField(max_length=50, null=True, blank=True, db_column='QuestId')
+    IsActive = models.BooleanField(db_column='IsActive')
+    IsDeleted = models.BooleanField(default=False, db_column='IsDeleted')
+    PropertyJSON = models.TextField(null=True, blank=True, db_column='PropertyJSON')
+    ClassId = models.IntegerField(null=True, blank=True, db_column='ClassId')
+    SubClassId = models.IntegerField(null=True, blank=True, db_column='SubClassId')
+    SequenceNo = models.IntegerField(null=True, blank=True, db_column='SequenceNo')
+    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn')
+    # Add additional fields if needed
+
+    class Meta:
+        db_table = 'dbo.GroupMaster'
+        managed = False
+
+    def save(self, *args, **kwargs):
+        self.GroupId = self.GID
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return str(self.GID)
+
+
+class UserGroup(models.Model):
+    """
+    Represents the user group membership from the dbo.UserGroup table.
+    The composite key is enforced using unique_together on:
+    (UserId, LocationId, GroupId, IsDeleted)
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        db_column='UserId',
+        related_name='user_groups'
+    )
+    LocationId = models.CharField(max_length=50, db_column='LocationId')
+    GroupId = models.CharField(max_length=50, db_column='GroupId')
+    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn')
+    IsDeleted = models.BooleanField(default=False, db_column='IsDeleted')
+    Import_Code = models.CharField(max_length=50, null=True, blank=True, db_column='Import_Code')
+    LID = models.ForeignKey(
+        Location,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        db_column='LID'
+    )
+    GID = models.ForeignKey(
+        GroupMaster,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        db_column='GID'
+    )
+
+    def save(self, *args, **kwargs):
+        self.LocationId = self.LID.LocationId
+        self.GroupId = self.GID.GroupId
+        super().save(*args, **kwargs)
+
+    class Meta:
+        db_table = 'dbo.UserGroup'
+        managed = False  # Tells Django not to manage (create/modify) this existing table.
+        unique_together = (('user', 'LocationId', 'GroupId', 'IsDeleted'),)
+        verbose_name = "User Group"
+        verbose_name_plural = "User Groups"
+
+    def __str__(self):
+        return f"{self.user.UserName} | {self.LocationId} | {self.GroupId} | Deleted: {self.IsDeleted}"
