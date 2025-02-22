@@ -1,3 +1,4 @@
+import uuid
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
@@ -5,65 +6,53 @@ from django.contrib.auth.hashers import make_password, check_password
 from apps.accounts.models.grades import Division, Grade
 
 class CustomUserManager(BaseUserManager):
-    def create_user(self, UserName=None, Email=None, password=None, role='Learner', **extra_fields):
+    def create_user(self, UserName=None, Email=None, password=None, **extra_fields):
+        """
+        Create and return a user without storing user type in this table.
+        Instead, expect that a 'user_type' is provided in extra_fields,
+        and use that for username generation for students.
+        """
         if not Email:
             raise ValueError("The Email must be set")
-        
         Email = self.normalize_email(Email)
         
-        if role == 'Learner':
-            # Pop the keys that are not part of the User model
+        # Extract user_type from extra_fields (default to 'student')
+        user_type = extra_fields.pop('user_type', 'Learner').lower()
+        
+        if user_type == 'Learner':
+            # For student users, expect additional fields to generate a username.
             roll_number = extra_fields.pop('roll_number', None)
             grade_obj = extra_fields.pop('grade', None)
             division_obj = extra_fields.pop('division', None)
-            
             if not roll_number:
                 raise ValueError("roll_number must be provided for student user creation")
-            
-            # Determine grade and division strings (removing spaces)
-            if grade_obj:
-                grade_str = grade_obj.name if hasattr(grade_obj, 'name') else str(grade_obj)
-                grade_str = grade_str.replace(" ", "")
-            else:
-                grade_str = ""
-                
-            if division_obj:
-                division_str = division_obj.name if hasattr(division_obj, 'name') else str(division_obj)
-                division_str = division_str.replace(" ", "")
-            else:
-                division_str = ""
-            
-            # Generate the username based on roll number, grade, and division if not provided.
+            grade_str = (grade_obj.name if hasattr(grade_obj, 'name') else str(grade_obj)).replace(" ", "") if grade_obj else ""
+            division_str = (division_obj.name if hasattr(division_obj, 'name') else str(division_obj)).replace(" ", "") if division_obj else ""
             if not UserName:
                 UserName = f"s{roll_number}{grade_str}{division_str}"
         else:
-            # For non-student roles, generate a sequential username if not provided.
+            # For admin/teacher users, generate a sequential username if not provided.
             if not UserName:
-                prefix_map = {
-                    'admin': 'A',
-                    'teacher': 'F',
-                    'Learner': 'S'
-                }
-                prefix = prefix_map.get(role, 'S')
-                count = self.filter(role=role).count()
+                # Use a prefix based on the user_type.
+                prefix_map = {'admin': 'A', 'teacher': 'F'}
+                prefix = prefix_map.get(user_type, 'S')
+                count = self.all().count()
                 UserName = f"{prefix}{count + 1:03d}"
         
-        # Create and save the user without the student-only extra fields.
-        user = self.model(UserName=UserName, Email=Email, role=role, **extra_fields)
+        user = self.model(UserName=UserName, Email=Email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
     def create_superuser(self, UserName, Email, password=None, **extra_fields):
+        # For superuser, we force user_type to 'admin'.
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('role', 'admin')
-
+        extra_fields.setdefault('user_type', 'admin')
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
-
         return self.create_user(UserName, Email, password, **extra_fields)
 
 class Institution(models.Model):
@@ -78,7 +67,7 @@ class Institution(models.Model):
     def __str__(self):
         return str(self.InstitutionId)
 class User(AbstractBaseUser, PermissionsMixin):
-    UserId = models.CharField(primary_key=True, max_length=450, db_column='UserId')
+    UserId = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_column='UserId')
     UserName = models.CharField(max_length=256, unique=True, null=True, blank=True, db_column='UserName')
     NormalizedUserName = models.CharField(max_length=256, unique=True, null=True, blank=True, db_column='NormalizedUserName')
     Email = models.CharField(max_length=256, unique=True, null=True, blank=True, db_column='Email')
@@ -93,7 +82,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     LockoutEnd = models.DateTimeField(null=True, blank=True, db_column='LockoutEnd')
     LockoutEnabled = models.BooleanField(default=True, db_column='LockoutEnabled')
     AccessFailedCount = models.IntegerField(default=0, db_column='AccessFailedCount')
-    InstitutionId = models.ForeignKey(Institution, on_delete=models.CASCADE, db_column='InstitutionId')
+    InstitutionId = models.IntegerField(default=0, db_column='InstitutionId')
     IsActive = models.BooleanField(default=True, db_column='IsActive')
     IsDeleted = models.BooleanField(default=False, db_column='IsDeleted')
 
