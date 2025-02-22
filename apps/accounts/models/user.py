@@ -1,17 +1,17 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
-
+from django.contrib.auth.hashers import make_password, check_password
 from apps.accounts.models.grades import Division, Grade
 
 class CustomUserManager(BaseUserManager):
-    def create_user(self, UserName=None, Email=None, password=None, role='student', **extra_fields):
+    def create_user(self, UserName=None, Email=None, password=None, role='Learner', **extra_fields):
         if not Email:
             raise ValueError("The Email must be set")
         
         Email = self.normalize_email(Email)
         
-        if role == 'student':
+        if role == 'Learner':
             # Pop the keys that are not part of the User model
             roll_number = extra_fields.pop('roll_number', None)
             grade_obj = extra_fields.pop('grade', None)
@@ -42,7 +42,7 @@ class CustomUserManager(BaseUserManager):
                 prefix_map = {
                     'admin': 'A',
                     'teacher': 'F',
-                    'student': 'S'
+                    'Learner': 'S'
                 }
                 prefix = prefix_map.get(role, 'S')
                 count = self.filter(role=role).count()
@@ -97,6 +97,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     IsActive = models.BooleanField(default=True, db_column='IsActive')
     IsDeleted = models.BooleanField(default=False, db_column='IsDeleted')
 
+    # We want to override the inherited "password" field.
+    password = None  # This hides the default "password" field from AbstractBaseUser.
+
     USERNAME_FIELD = 'UserName'
     REQUIRED_FIELDS = ['Email']
 
@@ -113,9 +116,24 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def id(self):
         return self.UserId
+    
+    # Define the password property to use PasswordHash
+    @property
+    def password(self):
+        return self.PasswordHash
+
+    @password.setter
+    def password(self, raw_password):
+        self.set_password(raw_password)
+
+    def set_password(self, raw_password):
+        self.PasswordHash = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        return check_password(raw_password, self.PasswordHash)
 
     class Meta:
-        db_table = 'UserIdentity'
+        db_table = 'UsersIdentity'
         managed = False  # Use the existing table without migrations
 
 class UserDetails(models.Model):
@@ -227,49 +245,51 @@ class GroupMaster(models.Model):
         return str(self.GID)
 
 
-class UserGroup(models.Model):
-    """
-    Represents the user group membership from the UserGroup table.
-    The composite key is enforced using unique_together on:
-    (UserId, LocationId, GroupId, IsDeleted)
-    """
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        db_column='UserId',
-        related_name='user_groups'
-    )
-    LocationId = models.CharField(max_length=50, db_column='LocationId')
-    GroupId = models.CharField(max_length=50, db_column='GroupId')
-    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn')
-    IsDeleted = models.BooleanField(default=False, db_column='IsDeleted')
-    Import_Code = models.CharField(max_length=50, null=True, blank=True, db_column='Import_Code')
-    LID = models.ForeignKey(
-        Location,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        db_column='LID'
-    )
-    GID = models.ForeignKey(
-        GroupMaster,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        db_column='GID'
-    )
+# class UserGroup(models.Model):
+#     """
+#     Represents the user group membership from the UserGroup table.
+#     The composite key is enforced using unique_together on:
+#     (UserId, LocationId, GroupId, IsDeleted)
+#     """
+#     # Disable Django's auto-generated primary key.
+#     id = None
+#     user = models.ForeignKey(
+#         User,
+#         on_delete=models.CASCADE,
+#         db_column='UserId',
+#         related_name='user_groups'
+#     )
+#     LocationId = models.CharField(max_length=50, db_column='LocationId')
+#     GroupId = models.CharField(max_length=50, db_column='GroupId')
+#     ModifiedOn = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn')
+#     IsDeleted = models.BooleanField(default=False, db_column='IsDeleted')
+#     Import_Code = models.CharField(max_length=50, null=True, blank=True, db_column='Import_Code')
+#     LID = models.ForeignKey(
+#         Location,
+#         on_delete=models.CASCADE,
+#         null=True,
+#         blank=True,
+#         db_column='LID'
+#     )
+#     GID = models.ForeignKey(
+#         GroupMaster,
+#         on_delete=models.CASCADE,
+#         null=True,
+#         blank=True,
+#         db_column='GID'
+#     )
 
-    def save(self, *args, **kwargs):
-        self.LocationId = self.LID.LocationId
-        self.GroupId = self.GID.GroupId
-        super().save(*args, **kwargs)
+#     def save(self, *args, **kwargs):
+#         self.LocationId = self.LID.LocationId
+#         self.GroupId = self.GID.GroupId
+#         super().save(*args, **kwargs)
 
-    class Meta:
-        db_table = 'UserGroup'
-        managed = False  # Tells Django not to manage (create/modify) this existing table.
-        unique_together = (('user', 'LocationId', 'GroupId', 'IsDeleted'),)
-        verbose_name = "User Group"
-        verbose_name_plural = "User Groups"
+#     class Meta:
+#         db_table = 'UserGroup'
+#         managed = False  # Tells Django not to manage (create/modify) this existing table.
+#         unique_together = (('user', 'LocationId', 'GroupId', 'IsDeleted'),)
+#         verbose_name = "User Group"
+#         verbose_name_plural = "User Groups"
 
-    def __str__(self):
-        return f"{self.user.UserName} | {self.LocationId} | {self.GroupId} | Deleted: {self.IsDeleted}"
+#     def __str__(self):
+#         return f"{self.user.UserName} | {self.LocationId} | {self.GroupId} | Deleted: {self.IsDeleted}"
