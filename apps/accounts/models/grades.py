@@ -41,15 +41,15 @@ class Grade(models.Model):
         return self.GradeName or f"Grade {self.id}"
 
 class Division(models.Model):
-    grade = models.ForeignKey('accounts.Grade', on_delete=models.CASCADE)
-    name = models.CharField(max_length=50)  # e.g., "A", "B", "C"
+    id = models.AutoField(primary_key=True, db_column='id')
+    DivisionName = models.CharField(max_length=50, blank=True, null=True, db_column='DivisionName')
+    IsActive = models.BooleanField(default=True, db_column='IsActive')
 
     class Meta:
         db_table = 'Division'
-        managed = False 
-        unique_together = ('grade', 'name')
+        managed = False
         verbose_name = "Division"
         verbose_name_plural = "Divisions"
 
     def __str__(self):
-        return f"{self.grade.name} - {self.name}"
+        return f"{self.DivisionName}"
