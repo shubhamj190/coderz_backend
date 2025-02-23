@@ -67,7 +67,7 @@ class Institution(models.Model):
     def __str__(self):
         return str(self.InstitutionId)
 class User(AbstractBaseUser, PermissionsMixin):
-    UserId = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_column='UserId')
+    UserId = models.CharField(max_length=256, primary_key=True, default=uuid.uuid4, editable=False, db_column='UserId')
     UserName = models.CharField(max_length=256, unique=True, null=True, blank=True, db_column='UserName')
     NormalizedUserName = models.CharField(max_length=256, unique=True, null=True, blank=True, db_column='NormalizedUserName')
     Email = models.CharField(max_length=256, unique=True, null=True, blank=True, db_column='Email')

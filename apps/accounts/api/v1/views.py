@@ -51,7 +51,6 @@ class UnifiedLoginView(TokenObtainPairView):
 
     def post(self, request, *args, **kwargs):
         # Optionally extract role filter from request data.
-        login_as = request.data.get("login_as")  # e.g., "admin", "teacher", or "student"
         
         serializer = self.get_serializer(data=request.data)
         try:
@@ -66,19 +65,12 @@ class UnifiedLoginView(TokenObtainPairView):
         if not user:
             return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
         
-        # If login_as is provided, ensure that user's role matches.
-        if login_as and user.role.lower() != login_as.lower():
-            return Response(
-                {"error": f"{login_as.capitalize()} access only"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
         # Generate JWT tokens for the user.
         refresh = RefreshToken.for_user(user)
         response_data = {
             "access": str(refresh.access_token),
             "refresh": str(refresh),
-            "role": user.role,
+            "role": user.details.UserType if hasattr(user, 'details') and user.details else None,
             "user_id": user.UserId
         }
         return Response(response_data, status=status.HTTP_200_OK)

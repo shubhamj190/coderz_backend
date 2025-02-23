@@ -31,7 +31,7 @@ INSTALLED_APPS = [
     'apps.helpdesk',
     'apps.common.apps.AccountsConfig',
     'apps.dashboards',
-    'rest_framework_simplejwt.token_blacklist',
+    # 'rest_framework_simplejwt.token_blacklist',
     'storages',
 ]
 

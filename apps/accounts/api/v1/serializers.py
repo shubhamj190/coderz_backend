@@ -9,8 +9,12 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
         user = self.user
-        data['role'] = user.role
         data['user_id'] = user.UserId
+        if hasattr(self.user, 'details') and self.user.details:
+            data['role'] = self.user.details.UserType
+        else:
+            data['role'] = None
+        return data
         return data
     
 class GradeSerializer(serializers.ModelSerializer):

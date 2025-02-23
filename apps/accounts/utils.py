@@ -1,6 +1,5 @@
 from apps.accounts.models.user import User
 def user_name_creator(user_type, user):
-    import pdb;pdb.set_trace()
     UserName = None
     if user_type == 'Learner':
             pass
