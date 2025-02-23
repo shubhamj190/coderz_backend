@@ -372,7 +372,7 @@ class AdminChangePasswordView(APIView):
         user = request.user
 
         # Ensure the user is an admin
-        if user.role != "admin":
+        if user.role != "Admin":
             return Response(
                 {"error": "Only admins can change passwords."},
                 status=status.HTTP_403_FORBIDDEN
