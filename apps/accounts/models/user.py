@@ -120,6 +120,10 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def check_password(self, raw_password):
         return check_password(raw_password, self.PasswordHash)
+    
+    @property
+    def role(self):
+        return self.details.UserType
 
     class Meta:
         db_table = 'UsersIdentity'

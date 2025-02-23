@@ -3,9 +3,9 @@ from rest_framework.throttling import UserRateThrottle
 class UserRoleRateThrottle(UserRateThrottle):
     THROTTLE_RATES = {
         'anon': '100/day',
-        'student': '1000/day',
-        'teacher': '2000/day',
-        'admin': '5000/day',
+        'Learner': '1000/day',
+        'Teacher': '2000/day',
+        'Admin': '5000/day',
     }
     
     def get_cache_key(self, request, view):

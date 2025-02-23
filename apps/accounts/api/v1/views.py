@@ -153,6 +153,7 @@ class AdminSignupView(APIView):
                 "username": user.UserName,
                 "first_name": user_details.FirstName,
                 "last_name": user_details.LastName,
+                'subject': 'Here is your Admin account details',
             }
             
             # Send the welcome email using send_templated_mail.
@@ -212,8 +213,10 @@ class TeacherSignupView(APIView):
 class UnifiedLogoutView(APIView):
     """
     Unified logout view for all user roles.
-    Expects a refresh token in the request body and blacklists it,
-    ensuring that the token belongs to the currently authenticated user.
+    Expects a refresh token in the request body and verifies that it belongs
+    to the currently authenticated user.
+    Note: Since 'rest_framework_simplejwt.token_blacklist' has been removed,
+    tokens will not be blacklisted server-side.
     """
     permission_classes = [IsAuthenticated]
 
@@ -226,15 +229,16 @@ class UnifiedLogoutView(APIView):
             )
         try:
             token = RefreshToken(refresh_token)
-            # Verify the token's user_id matches the authenticated user.
-            if token.payload.get("user_id") != request.user.UserId:
+            # Compare user_id as strings
+            if str(token.payload.get("user_id")) != str(request.user.UserId):
                 return Response(
                     {"error": "The token does not belong to the authenticated user."},
                     status=status.HTTP_403_FORBIDDEN
                 )
-            token.blacklist()
+            # Since token_blacklist is disabled, we cannot blacklist the token.
+            # Instead, simply return a successful logout response.
             return Response(
-                {"message": "Logout successful."},
+                {"message": "Logout successful. Please remove the token client-side."},
                 status=status.HTTP_205_RESET_CONTENT
             )
         except Exception as e:
