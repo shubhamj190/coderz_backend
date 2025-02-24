@@ -471,19 +471,18 @@ class AdminAddTeacherAPIView(generics.CreateAPIView):
     serializer_class = TeacherCreateSerializer
     permission_classes = [IsSpecificAdmin]
 
-    def get_queryset(self):
-        # Return only teacher records (assuming stored value is "Teacher")
-        return UserDetails.objects.filter(UserType__iexact='Teacher')
-
 class TeacherListAPIView(generics.ListAPIView):
     """
     API view to list all teachers.
     Accessible only by admin users.
     """
-    queryset = UserDetails.objects.all()
     serializer_class = TeacherListSerializer
     permission_classes = [IsAuthenticated, IsSpecificAdmin]
     pagination_class = StandardResultsSetPagination
+
+    def get_queryset(self):
+        # Return only teacher records (assuming stored value is "Teacher")
+        return UserDetails.objects.filter(UserType__iexact='Teacher')
 
 class TeacherDetailAPIView(generics.RetrieveUpdateAPIView):
     """
