@@ -468,9 +468,12 @@ class AdminAddTeacherAPIView(generics.CreateAPIView):
     API endpoint for admin users to add a new teacher.
     This creates both the user record (with role 'teacher' and gender) and the teacher profile.
     """
-    queryset = UserDetails.objects.all()
     serializer_class = TeacherCreateSerializer
-    permission_classes = [IsAuthenticated, IsSpecificAdmin]
+    permission_classes = [IsSpecificAdmin]
+
+    def get_queryset(self):
+        # Return only teacher records (assuming stored value is "Teacher")
+        return UserDetails.objects.filter(UserType__iexact='Teacher')
 
 class TeacherListAPIView(generics.ListAPIView):
     """
