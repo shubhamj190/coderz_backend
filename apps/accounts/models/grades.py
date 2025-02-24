@@ -31,7 +31,7 @@ class Grade(models.Model):
     
     class Meta:
         db_table = 'Grade'
-        managed = False  # Set to False if the table is managed externally
+        # managed = False  # Set to False if the table is managed externally
 
     def save(self, *args, **kwargs):
         self.GradeId = self.id
@@ -41,13 +41,13 @@ class Grade(models.Model):
         return self.GradeName or f"Grade {self.id}"
 
 class Division(models.Model):
-    id = models.AutoField(primary_key=True, db_column='id')
+    DivisionId = models.AutoField(primary_key=True, db_column='DivisionId')
     DivisionName = models.CharField(max_length=50, blank=True, null=True, db_column='DivisionName')
     IsActive = models.BooleanField(default=True, db_column='IsActive')
 
     class Meta:
         db_table = 'Division'
-        managed = False
+        # managed = False
         verbose_name = "Division"
         verbose_name_plural = "Divisions"
 

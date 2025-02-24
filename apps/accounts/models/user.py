@@ -178,9 +178,23 @@ class UserDetails(models.Model):
     AdmissionNo = models.CharField(max_length=500, blank=True, null=True, db_column='AdmissionNo')
     Gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True, db_column='Gender')
 
+    # For Teachers: allow multiple grades and divisions (optional)
+    assigned_grades = models.ManyToManyField(
+        Grade,
+        through='TeacherAssignedGrade',
+        related_name='teacher_details',
+        blank=True
+    )
+    assigned_divisions = models.ManyToManyField(
+        Division,
+        through='TeacherAssignedDivision',
+        related_name='teacher_details',
+        blank=True
+    )
+
     class Meta:
         db_table = 'UserDetails'
-        managed = False  # Do not manage this table via Django migrations
+        # managed = False  # Do not manage this table via Django migrations
 
     def __str__(self):
         return f"Details for {self.user.UserName}"
@@ -236,6 +250,30 @@ class GroupMaster(models.Model):
 
     def __str__(self):
         return str(self.GID)
+    
+class TeacherAssignedGrade(models.Model):
+    userdetails = models.ForeignKey('accounts.UserDetails', on_delete=models.CASCADE,db_column='UserId')
+    grade = models.ForeignKey(Grade, on_delete=models.CASCADE,db_column='GradeId')
+    
+    class Meta:
+        db_table = 'TeacherAssignedGrade'
+        unique_together = (('userdetails', 'grade'),)
+        managed = True  # Django will manage this table
+
+    def __str__(self):
+        return f"{self.userdetails.user.UserName} - {self.grade.GradeName}"
+
+class TeacherAssignedDivision(models.Model):
+    userdetails = models.ForeignKey('accounts.UserDetails', on_delete=models.CASCADE, db_column='UserId')
+    division = models.ForeignKey(Division, on_delete=models.CASCADE,db_column='DivisionId')
+    
+    class Meta:
+        db_table = 'TeacherAssignedDivision'
+        unique_together = (('userdetails', 'division'),)
+        managed = True  # Django will manage this table
+
+    def __str__(self):
+        return f"{self.userdetails.user.UserName} - {self.division.DivisionName}"
 
 
 # class UserGroup(models.Model):
