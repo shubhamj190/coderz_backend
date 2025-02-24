@@ -42,7 +42,7 @@ urlpatterns = [
     path('admin/teachers/add/', AdminAddTeacherAPIView.as_view(), name='admin-add-teacher'),
 
     path('admin/teachers/', TeacherListAPIView.as_view(), name='teacher-list'),
-    path('admin/teachers/<int:pk>/', TeacherDetailAPIView.as_view(), name='teacher-detail'),
+    path('admin/teachers/<str:pk>/', TeacherDetailAPIView.as_view(), name='teacher-detail'),
 
     path('admin/students/add/', AdminAddStudentAPIView.as_view(), name='admin-add-student'),
     path('admin/students', StudentListAPIView.as_view(), name='student-list'),

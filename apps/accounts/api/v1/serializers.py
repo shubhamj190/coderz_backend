@@ -105,12 +105,13 @@ class TeacherListSerializer(serializers.ModelSerializer):
     UserName = serializers.CharField(source="user.UserName", read_only=True)
     email = serializers.CharField(source="user.Email", read_only=True)
     gender = serializers.CharField(source="user.gender", read_only=True)
-    id = serializers.CharField(source="user.UserId", read_only=True)
+    UserId = serializers.CharField(source="user.UserId", read_only=True)
     userType = serializers.CharField(source="UserType", read_only=True)
+    IsActive = serializers.CharField(source="user.IsActive", read_only=True)
 
     class Meta:
         model = UserDetails
-        fields = ['full_name', 'email', 'id', 'UserName', 'gender', 'userType']
+        fields = ['full_name', 'email', 'UserId', 'UserName', 'gender', 'userType','IsActive']
 
     def get_full_name(self, obj):
         first = obj.FirstName or ""
@@ -119,45 +120,57 @@ class TeacherListSerializer(serializers.ModelSerializer):
     
 class TeacherDetailSerializer(serializers.ModelSerializer):
     # Fields from the related User model
-    FirstName = serializers.CharField(source="user.FirstName", required=False)
-    LastName = serializers.CharField(source="user.LastName", required=False)
-    gender = serializers.CharField(source="user.gender", required=False)
-    Email = serializers.EmailField(source="user.Email", required=False)
-    PhoneNumber = serializers.CharField(source="user.PhoneNumber", required=False)
+    # first_name = serializers.CharField(source="user.FirstName", required=False)
+    # last_name = serializers.CharField(source="user.LastName", required=False)
+    email = serializers.CharField(source="user.Email", read_only=True)
+    gender = serializers.CharField(source="user.gender", read_only=True)
+    UserId = serializers.CharField(source="user.UserId", read_only=True)
+    IsActive = serializers.CharField(source="user.IsActive", read_only=True)
     
     class Meta:
         model = UserDetails
         fields = [
-            "id",               # Teacher's primary key
-            "FirstName",        # Updatable user first name
-            "LastName",         # Updatable user last name
-            "gender",           # Updatable user gender
-            "Email",            # Updatable user email
-            "PhoneNumber",      # Updatable user phone number
-            "years_of_experience",
+            "UserId",               # Teacher's primary key (UserId from related user)
+            "FirstName",            # Updatable user first name
+            "LastName",        # Updatable user last name
+            "email",           # Updatable user gender
+            "gender",  # Updatable user phone number
+            "IsActive",
             "assigned_grades",
             "assigned_divisions",
-            # "available_time_slots"
-            # 'is_active'
+            # You can add other fields (like available_time_slots, is_active, etc.) as needed.
         ]
     
+    def get_full_name(self, obj):
+        first = obj.FirstName or ""
+        last = obj.LastName or ""
+        return f"{first} {last}".strip()
+
     def update(self, instance, validated_data):
-        # Extract nested user data if present.
+        # Extract and update nested user data.
         user_data = validated_data.pop("user", {})
-        
-        # Update the user fields except for UserName.
         user = instance.user
         for attr, value in user_data.items():
-            # Skip username update even if provided
             if attr == "UserName":
                 continue
             setattr(user, attr, value)
         user.save()
+        import pdb; pdb.set_trace()
+        # Extract many-to-many fields separately.
+        assigned_grades = validated_data.pop("assigned_grades", None)
+        assigned_divisions = validated_data.pop("assigned_divisions", None)
         
-        # Update Teacher-specific fields.
+        # Update the remaining fields on UserDetails.
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+        
+        # Update many-to-many relationships if provided.
+        if assigned_grades is not None:
+            instance.assigned_grades.set(assigned_grades)
+        if assigned_divisions is not None:
+            instance.assigned_divisions.set(assigned_divisions)
+        
         return instance
     
 class StudentCreateSerializer(serializers.ModelSerializer):
