@@ -499,9 +499,8 @@ class AdminAddStudentAPIView(generics.CreateAPIView):
     API endpoint for admin users to add a new student.
     This creates both a User record (with role 'student') and a Student profile.
     """
-    queryset = UserDetails.objects.all()
     serializer_class = StudentCreateSerializer
-    permission_classes = [IsAuthenticated, IsSpecificAdmin]
+    permission_classes = [IsSpecificAdmin]
 
 class StudentListAPIView(generics.ListAPIView):
     """

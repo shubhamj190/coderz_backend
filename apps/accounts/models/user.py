@@ -177,6 +177,7 @@ class UserDetails(models.Model):
     UTMData = models.CharField(max_length=1000, blank=True, null=True, db_column='UTMData')
     AdmissionNo = models.CharField(max_length=500, blank=True, null=True, db_column='AdmissionNo')
     Gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True, db_column='Gender')
+    date_of_birth = models.DateField(null=True, blank=True, db_column='date_of_birth')
 
     # For Teachers: allow multiple grades and divisions (optional)
     assigned_grades = models.ManyToManyField(
