@@ -26,7 +26,6 @@ from .serializers import (
     StudentCreateSerializer,
     StudentDetailSerializer,
     StudentListSerializer,
-    StudentUpdateSerializer,
     TeacherCreateSerializer,
     TeacherDetailSerializer,
     TeacherListSerializer,

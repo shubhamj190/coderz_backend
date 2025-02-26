@@ -38,6 +38,7 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(write_only=True)
     last_name = serializers.CharField(write_only=True)
     gender = serializers.ChoiceField(choices=UserDetails.GENDER_CHOICES, write_only=True)
+    profile_pic = serializers.ImageField(required=False, allow_null=True)
     
     # Teacher-specific many-to-many fields (if these exist on UserDetails)
     assigned_grades = serializers.PrimaryKeyRelatedField(
@@ -57,7 +58,8 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
             "password",
             "first_name",
             "last_name",
-            "gender"
+            "gender",
+            'profile_pic'
         ]
     
     def create(self, validated_data):
@@ -72,6 +74,7 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
             # Pop teacher-specific many-to-many fields.
             assigned_grades = validated_data.pop("assigned_grades", None)
             assigned_divisions = validated_data.pop("assigned_divisions", None)
+            profile_pic = validated_data.pop("profile_pic", None)
             
             with transaction.atomic():
                 # Create the user in the User table. Pass user_type as 'teacher' to the manager.
@@ -88,7 +91,8 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
                     FirstName=first_name,
                     LastName=last_name,
                     Gender=gender,
-                    UserType='Teacher'
+                    UserType='Teacher',
+                    profile_pic=profile_pic
                     # Other fields can be populated as needed.
                 )
                 user_name=user_name_creator('Teacher', user)
@@ -307,53 +311,6 @@ class StudentDetailSerializer(serializers.ModelSerializer):
         user.save()
         
         # Update Student-specific fields.
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        return instance
-
-class StudentUpdateSerializer(serializers.ModelSerializer):
-    # Nested user fields:
-    UserName = serializers.CharField(source="user.UserName", read_only=True)
-    FirstName = serializers.CharField(source="user.FirstName", required=False)
-    LastName = serializers.CharField(source="user.LastName", required=False)
-    gender = serializers.CharField(source="user.gender", required=False)
-    Email = serializers.EmailField(source="user.Email", required=False)
-    PhoneNumber = serializers.CharField(source="user.PhoneNumber", required=False)
-
-    class Meta:
-        model = UserDetails
-        fields = [
-            "UserName",         # read-only, coming from the related User model
-            "FirstName",        # updatable user first name
-            "LastName",         # updatable user last name
-            "gender",           # updatable user gender
-            "Email",            # updatable user email
-            "PhoneNumber",      # updatable user phone number
-            "date_of_birth",
-            "grade",
-            "division",
-            "roll_number",
-            "parent_name",
-            "parent_email",
-            "parent_phone",
-            "admission_number",
-            "is_active"         # student-specific active flag
-        ]
-    
-    def update(self, instance, validated_data):
-        # Extract user data from nested input, if provided.
-        user_data = validated_data.pop("user", {})
-        user = instance.user
-
-        # Update user fields except for UserName.
-        for attr, value in user_data.items():
-            if attr == "UserName":
-                continue
-            setattr(user, attr, value)
-        user.save()
-        
-        # Update remaining student fields.
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()

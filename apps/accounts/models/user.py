@@ -178,6 +178,7 @@ class UserDetails(models.Model):
     AdmissionNo = models.CharField(max_length=500, blank=True, null=True, db_column='AdmissionNo')
     Gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True, db_column='Gender')
     date_of_birth = models.DateField(null=True, blank=True, db_column='date_of_birth')
+    profile_pic = models.ImageField(upload_to='profile_pics/', blank=True, null=True, db_column='ProfilePic')
 
     # For Teachers: allow multiple grades and divisions (optional)
     assigned_grades = models.ManyToManyField(
