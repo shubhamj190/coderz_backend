@@ -3,15 +3,15 @@ def user_name_creator(user_type, user):
     UserName = None
     if user_type == 'Learner':
         if user:
-            grade_obj=user.details.GradeId.GradeId
-            division_obj=user.details.DivisionId.DivisionName
+            grade_obj=user.details.GradeId
+            division_obj=user.details.DivisionId
 
             # For student users, expect additional fields to generate a username.
-            roll_number = UserDetails.objects.filter(GradeId__GradeId=grade_obj, DivisionId__DivisionName=division_obj).count() + 1
+            roll_number = UserDetails.objects.filter(GradeId=grade_obj, DivisionId=division_obj).count() + 1
             if not roll_number:
                 raise ValueError("roll_number must be provided for student user creation")
-            grade_str = (grade_obj.name if hasattr(grade_obj, 'name') else str(grade_obj)).replace(" ", "") if grade_obj else ""
-            division_str = (division_obj.name if hasattr(division_obj, 'name') else str(division_obj)).replace(" ", "") if division_obj else ""
+            grade_str = (grade_obj.GradeId if hasattr(grade_obj, 'GradeId') else str(grade_obj)).replace(" ", "") if grade_obj else ""
+            division_str = (division_obj.DivisionName if hasattr(division_obj, 'DivisionName') else str(division_obj)).replace(" ", "") if division_obj else ""
             if not UserName:
                 UserName = f"L{roll_number}{grade_str}{division_str}"
     else:

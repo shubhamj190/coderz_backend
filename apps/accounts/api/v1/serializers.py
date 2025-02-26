@@ -198,6 +198,7 @@ class StudentCreateSerializer(serializers.ModelSerializer):
     # Correct field names to match UserDetails model
     GradeId = serializers.PrimaryKeyRelatedField(queryset=Grade.objects.all(), required=True)
     DivisionId = serializers.PrimaryKeyRelatedField(queryset=Division.objects.all(), required=True)
+    profile_pic = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = UserDetails
@@ -210,7 +211,8 @@ class StudentCreateSerializer(serializers.ModelSerializer):
             "password",
             "first_name",
             "last_name",
-            "gender"
+            "gender",
+            "profile_pic",
         ]
 
     def create(self, validated_data):
@@ -223,6 +225,7 @@ class StudentCreateSerializer(serializers.ModelSerializer):
         DivisionId = validated_data.get("DivisionId")  # Use correct field name
         date_of_birth = validated_data.get("date_of_birth")
         admission_number = validated_data.get("AdmissionNo")
+        profile_pic = validated_data.pop("profile_pic", None)
 
         with transaction.atomic():
             # Create the User record with role 'student'
@@ -244,7 +247,8 @@ class StudentCreateSerializer(serializers.ModelSerializer):
                 DivisionId=DivisionId,
                 AdmissionNo=admission_number,
                 UserType='Learner',
-                IsActive=True
+                IsActive=True,
+                profile_pic=profile_pic
             )
             user_name = user_name_creator('Learner', user)
             user.UserName = user_name
