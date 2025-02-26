@@ -130,7 +130,7 @@ class TeacherDetailSerializer(serializers.ModelSerializer):
     Gender = serializers.CharField( required=True)
     email = serializers.CharField(source="user.Email", read_only=True)
     UserId = serializers.CharField(source="user.UserId", read_only=True)
-    IsActive = serializers.CharField(source="user.IsActive", read_only=True)
+    IsActive = serializers.BooleanField(source="user.IsActive", read_only=True)
 
     # Explicitly declare ManyToMany relationships
     assigned_grades = serializers.PrimaryKeyRelatedField(
@@ -267,30 +267,32 @@ class StudentListSerializer(serializers.ModelSerializer):
 
 class StudentDetailSerializer(serializers.ModelSerializer):
     # Nested user fields (read-only username)
-    FirstName = serializers.CharField(source="user.FirstName", required=False)
-    LastName = serializers.CharField(source="user.LastName", required=False)
-    gender = serializers.CharField(source="user.gender", required=False)
+    UserId = serializers.CharField(source="user.UserId", read_only=True)
+    FirstName = serializers.CharField(required=False)
+    LastName = serializers.CharField(required=False)
+    Gender = serializers.CharField(required=True)
     Email = serializers.EmailField(source="user.Email", required=False)
     PhoneNumber = serializers.CharField(source="user.PhoneNumber", required=False)
+    IsActive = serializers.BooleanField(source="user.IsActive", read_only=True)
+
+    # Correct field names to match UserDetails model
+    GradeId = serializers.PrimaryKeyRelatedField(queryset=Grade.objects.all(), required=True)
+    DivisionId = serializers.PrimaryKeyRelatedField(queryset=Division.objects.all(), required=True)
     
     class Meta:
         model = UserDetails
         fields = [
-            "id",                # Student's primary key
+            "UserId",                # Student's primary key
             "FirstName",         # Updatable user first name
             "LastName",          # Updatable user last name
-            "gender",            # Updatable user gender
+            "Gender",            # Updatable user gender
             "Email",             # Updatable user email
             "PhoneNumber",       # Updatable user phone number
             "date_of_birth",
-            "grade",
-            "division",
-            "roll_number",
-            "parent_name",
-            "parent_email",
-            "parent_phone",
-            "admission_number",
-            "is_active"          # Student's active status
+            "GradeId",
+            "DivisionId",
+            "AdmissionNo",
+            "IsActive"          # Student's active status
         ]
     
     def update(self, instance, validated_data):

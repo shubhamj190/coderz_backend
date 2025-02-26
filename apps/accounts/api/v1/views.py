@@ -490,9 +490,11 @@ class TeacherDetailAPIView(generics.RetrieveUpdateAPIView):
     The UserName field is read-only and cannot be updated.
     Access is restricted to admin users.
     """
-    queryset = UserDetails.objects.all()
     serializer_class = TeacherDetailSerializer
     permission_classes = [IsAuthenticated, IsSpecificAdmin]
+    def get_queryset(self):
+        # Return only teacher records (assuming stored value is "Teacher")
+        return UserDetails.objects.filter(UserType__iexact='Teacher')
 
 class AdminAddStudentAPIView(generics.CreateAPIView):
     """
@@ -521,9 +523,11 @@ class StudentDetailAPIView(generics.RetrieveUpdateAPIView):
     The UserName field is read-only and cannot be updated.
     Access is restricted to admin users.
     """
-    queryset = UserDetails.objects.all()
     serializer_class = StudentDetailSerializer
-    permission_classes = [IsAuthenticated, IsSpecificAdmin]
+    permission_classes = [IsSpecificAdmin]
+
+    def get_queryset(self):
+        return UserDetails.objects.filter(UserType__iexact='Learner')
 
 class BulkUploadStudentsAPIView(APIView):
     """
