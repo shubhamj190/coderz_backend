@@ -507,10 +507,13 @@ class StudentListAPIView(generics.ListAPIView):
     API view to list all students.
     Accessible only by admin users.
     """
-    queryset = UserDetails.objects.all()
     serializer_class = StudentListSerializer
-    permission_classes = [IsAuthenticated, IsSpecificAdmin]
+    permission_classes = [IsSpecificAdmin]
     pagination_class = StandardResultsSetPagination
+
+    def get_queryset(self):
+        # Return only teacher records (assuming stored value is "Teacher")
+        return UserDetails.objects.filter(UserType__iexact='Learner')
 
 class StudentDetailAPIView(generics.RetrieveUpdateAPIView):
     """
