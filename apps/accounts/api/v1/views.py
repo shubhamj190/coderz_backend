@@ -547,5 +547,5 @@ class BulkUploadStudentsAPIView(APIView):
             return Response({"error": f"Failed to read CSV file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Enqueue the task asynchronously
-        task = process_bulk_upload_students.delay(csv_data)
-        return Response({"message": "Bulk upload initiated.", "task_id": task.id}, status=status.HTTP_202_ACCEPTED)
+        task = process_bulk_upload_students(csv_data)
+        return Response({"message": "Bulk upload initiated.", "task_id": "task.id"}, status=status.HTTP_202_ACCEPTED)
