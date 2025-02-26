@@ -1,0 +1,4 @@
+Name,Last Name,Gender,DOB,E-Mail,Grade,Division,Admission No.,Active Status
+John,Doe,Male,2010-05-15,johndoe1234@example.com,Grade 5,A,STU1001,True
+Jane,Smith,Female,2011-09-20,janesmith1234@example.com,Grade 6,B,STU1002,True
+Mike,Brown,Male,2012-01-10,mikebrown1234@example.com,Grade 5,A,STU1003,False
