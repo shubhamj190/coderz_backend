@@ -120,12 +120,20 @@ class TeacherListSerializer(serializers.ModelSerializer):
     
 class TeacherDetailSerializer(serializers.ModelSerializer):
     # Fields from the related User model
-    # first_name = serializers.CharField(source="user.FirstName", required=False)
-    # last_name = serializers.CharField(source="user.LastName", required=False)
+    FirstName = serializers.CharField( required=True)
+    LastName = serializers.CharField( required=True)
+    Gender = serializers.CharField( required=True)
     email = serializers.CharField(source="user.Email", read_only=True)
-    gender = serializers.CharField(source="user.gender", read_only=True)
     UserId = serializers.CharField(source="user.UserId", read_only=True)
     IsActive = serializers.CharField(source="user.IsActive", read_only=True)
+
+    # Explicitly declare ManyToMany relationships
+    assigned_grades = serializers.PrimaryKeyRelatedField(
+        queryset=Grade.objects.all(), many=True, required=False
+    )
+    assigned_divisions = serializers.PrimaryKeyRelatedField(
+        queryset=Division.objects.all(), many=True, required=False
+    )
     
     class Meta:
         model = UserDetails
@@ -134,11 +142,10 @@ class TeacherDetailSerializer(serializers.ModelSerializer):
             "FirstName",            # Updatable user first name
             "LastName",        # Updatable user last name
             "email",           # Updatable user gender
-            "gender",  # Updatable user phone number
+            "Gender",  # Updatable user phone number
             "IsActive",
             "assigned_grades",
             "assigned_divisions",
-            # You can add other fields (like available_time_slots, is_active, etc.) as needed.
         ]
     
     def get_full_name(self, obj):
@@ -155,7 +162,6 @@ class TeacherDetailSerializer(serializers.ModelSerializer):
                 continue
             setattr(user, attr, value)
         user.save()
-        import pdb; pdb.set_trace()
         # Extract many-to-many fields separately.
         assigned_grades = validated_data.pop("assigned_grades", None)
         assigned_divisions = validated_data.pop("assigned_divisions", None)
