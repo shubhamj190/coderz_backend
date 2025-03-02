@@ -1,3 +1,3 @@
-from .projects import Project, ProjectSubmission
+from .projects import ClassroomProject, ProjectSession, ProjectSubmission
 
-__all__ = ['Project', 'ProjectSubmission']
+__all__ = ['ClassroomProject', 'ProjectSubmission','ProjectSession']
