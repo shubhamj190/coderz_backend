@@ -2,7 +2,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
-from apps.projects.models.projects import ClassroomProject
+from apps.projects.models.projects import ClassroomProject, ProjectSession
 from apps.projects.utils import get_teacher_for_grade_division
 
 User = get_user_model()
@@ -42,3 +42,10 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
             teacher = get_teacher_for_grade_division(grade, division)
             validated_data['assigned_teacher'] = teacher
         return super().update(instance, validated_data)
+    
+class ProjectSessionSerializer(serializers.ModelSerializer):
+    file_type = serializers.ReadOnlyField()  # To include file type in response
+
+    class Meta:
+        model = ProjectSession
+        fields = "__all__"
