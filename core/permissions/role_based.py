@@ -1,17 +1,29 @@
 from rest_framework.permissions import BasePermission
 
+
 class IsSpecificAdmin(BasePermission):
-    
+
     def has_permission(self, request, view):
         print(request.user.is_authenticated)
-        return request.user.is_authenticated and request.user.role == 'Admin'
-    
+        return request.user.is_authenticated and request.user.role == "Admin"
+
+
 class IsSpecificTeacher(BasePermission):
-    
+
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == 'Teacher'
-    
+        return request.user.is_authenticated and request.user.role == "Teacher"
+
+
 class IsSpecificStudent(BasePermission):
 
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == 'Learner'
+        return request.user.is_authenticated and request.user.role == "Learner"
+
+
+class IsAdminOrTeacher(BasePermission):
+
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role in [
+            "Admin",
+            "Teacher",
+        ]
