@@ -2,7 +2,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
-from apps.projects.models.projects import ClassroomProject, ProjectSession
+from apps.projects.models.projects import ClassroomProject, ProjectSession, ProjectSubmission
 from apps.projects.utils import get_teacher_for_grade_division
 
 User = get_user_model()
@@ -49,3 +49,9 @@ class ProjectSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectSession
         fields = "__all__"
+
+class ProjectSubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectSubmission
+        fields = ["id", "project", "student", "submission_file", "submitted_at", "feedback", "marks_obtained"]
+        read_only_fields = ["submitted_at", "feedback", "marks_obtained"]

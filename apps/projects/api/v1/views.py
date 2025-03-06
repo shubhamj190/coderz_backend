@@ -4,9 +4,9 @@ from rest_framework.views import APIView
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectSessionSerializer
+from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectSessionSerializer, ProjectSubmissionSerializer
 from apps.projects.models.projects import ClassroomProject, ProjectSession
-from core.permissions.role_based import IsAdminOrTeacher
+from core.permissions.role_based import IsAdminOrTeacher, IsSpecificStudent
 from rest_framework.parsers import MultiPartParser, FormParser
 
 User = get_user_model()
@@ -105,3 +105,51 @@ class ProjectSessionListView(APIView):
 
         serializer = ProjectSessionSerializer(sessions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class ProjectSubmissionCreateView(APIView):
+    """
+    API for students to submit project files.
+    Only authenticated students can submit.
+    """
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsSpecificStudent]
+
+    def post(self, request, *args, **kwargs):
+        """
+        Handle project submission.
+        """
+        student = request.user  # Get logged-in student
+
+        # Ensure student role is valid
+        if not hasattr(student, 'role') or student.role != 'Learner':
+            return Response(
+                {"error": "Only students can submit projects."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Validate project exists
+        project_id = request.data.get("project")
+        try:
+            project = ClassroomProject.objects.get(id=project_id)
+        except ClassroomProject.DoesNotExist:
+            return Response(
+                {"error": "Project not found."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Create submission
+        data = {
+            "project": project.id,
+            "student": student.id,
+            "submission_file": request.FILES.get("submission_file"),
+        }
+        serializer = ProjectSubmissionSerializer(data=data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Project submitted successfully", "data": serializer.data},
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
