@@ -1,3 +1,4 @@
+import os
 from django.db import models
 
 from apps.accounts.models.grades import Division, Grade
@@ -39,6 +40,11 @@ class ProjectSession(models.Model):
 
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
+
+    def file_type(self):
+        if self.ppt_file:
+            return os.path.splitext(self.ppt_file.name)[-1].lower().replace(".", "")
+        return None
 
     def __str__(self):
         return f"{self.title} - {self.project.title}"
