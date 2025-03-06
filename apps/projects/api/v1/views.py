@@ -82,3 +82,26 @@ class UpdateProjectSessionView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ProjectSessionListView(APIView):
+    """
+    API to get all project sessions or filter by project ID.
+    Only Admins and Teachers can access.
+    """
+    permission_classes = [IsAdminOrTeacher]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Fetch all project sessions or sessions of a specific project.
+        Example:
+        - GET /api/project-sessions/ → Get all sessions.
+        - GET /api/project-sessions/?project_id=3 → Get sessions for project ID 3.
+        """
+        project_id = request.GET.get('project_id')  # Fetch project_id from query params
+        sessions = ProjectSession.objects.all()
+
+        if project_id:
+            sessions = sessions.filter(project_id=project_id)
+
+        serializer = ProjectSessionSerializer(sessions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
