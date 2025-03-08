@@ -46,7 +46,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "shubhamjadhav190@gmail.com"
 EMAIL_HOST_PASSWORD = "odei empj myvi wfko"
 
-ALLOWED_HOSTS=['cf20-103-160-70-120.ngrok-free.app', 'localhost','shubham.lobstersearch.com']
-CSRF_TRUSTED_ORIGINS=['https://cf20-103-160-70-120.ngrok-free.app','http://localhost:3000','https://shubham.lobstersearch.com']
+ALLOWED_HOSTS=['viable-reasonably-goldfish.ngrok-free.app', 'localhost']
+CSRF_TRUSTED_ORIGINS=['https://viable-reasonably-goldfish.ngrok-free.app','http://localhost:3000']
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
