@@ -39,7 +39,6 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(write_only=True)
     last_name = serializers.CharField(write_only=True)
     gender = serializers.ChoiceField(choices=UserDetails.GENDER_CHOICES, write_only=True)
-    profile_pic = serializers.ImageField(required=False, allow_null=True)
     
     # Teacher-specific many-to-many fields (if these exist on UserDetails)
     assigned_grades = serializers.PrimaryKeyRelatedField(
@@ -60,7 +59,6 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "gender",
-            'profile_pic'
         ]
     
     def create(self, validated_data):
@@ -75,7 +73,6 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
             # Pop teacher-specific many-to-many fields.
             assigned_grades = validated_data.pop("assigned_grades", None)
             assigned_divisions = validated_data.pop("assigned_divisions", None)
-            profile_pic = validated_data.pop("profile_pic", None)
             
             with transaction.atomic():
                 if User.objects.filter(Email=email).exists():
@@ -95,7 +92,6 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
                     LastName=last_name,
                     Gender=gender,
                     UserType='Teacher',
-                    profile_pic=profile_pic
                     # Other fields can be populated as needed.
                 )
                 user_name=user_name_creator('Teacher', user)
@@ -201,7 +197,6 @@ class StudentCreateSerializer(serializers.ModelSerializer):
     # Correct field names to match UserDetails model
     GradeId = serializers.PrimaryKeyRelatedField(queryset=Grade.objects.all(), required=True)
     DivisionId = serializers.PrimaryKeyRelatedField(queryset=Division.objects.all(), required=True)
-    profile_pic = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = UserDetails
@@ -215,7 +210,6 @@ class StudentCreateSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "gender",
-            "profile_pic",
         ]
 
     def create(self, validated_data):
@@ -228,7 +222,6 @@ class StudentCreateSerializer(serializers.ModelSerializer):
         DivisionId = validated_data.get("DivisionId")  # Use correct field name
         date_of_birth = validated_data.get("date_of_birth")
         admission_number = validated_data.get("AdmissionNo")
-        profile_pic = validated_data.pop("profile_pic", None)
 
         with transaction.atomic():
             if User.objects.filter(Email=email).exists():
@@ -253,7 +246,6 @@ class StudentCreateSerializer(serializers.ModelSerializer):
                 AdmissionNo=admission_number,
                 UserType='Learner',
                 IsActive=True,
-                profile_pic=profile_pic
             )
             user_name = user_name_creator('Learner', user)
             user.UserName = user_name
