@@ -481,7 +481,14 @@ class TeacherListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         # Return only teacher records (assuming stored value is "Teacher")
-        return UserDetails.objects.filter(UserType__iexact='Teacher')
+        qs =  UserDetails.objects.filter(UserType__iexact='Teacher')
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            if is_active.lower() == 'true':
+                qs = qs.filter(IsActive=True)
+            elif is_active.lower() == 'false':
+                qs = qs.filter(IsActive=False)
+        return qs
 
 class TeacherDetailAPIView(generics.RetrieveUpdateAPIView):
     """
@@ -514,7 +521,14 @@ class StudentListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         # Return only teacher records (assuming stored value is "Teacher")
-        return UserDetails.objects.filter(UserType__iexact='Learner')
+        qs = UserDetails.objects.filter(UserType__iexact='Learner')
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            if is_active.lower() == 'true':
+                qs = qs.filter(IsActive=True)
+            elif is_active.lower() == 'false':
+                qs = qs.filter(IsActive=False)
+        return qs
 
 class StudentDetailAPIView(generics.RetrieveUpdateAPIView):
     """

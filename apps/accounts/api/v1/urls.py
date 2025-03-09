@@ -47,7 +47,7 @@ urlpatterns = [
     path('admin/teachers/<str:pk>/', TeacherDetailAPIView.as_view(), name='teacher-detail'),
 
     path('admin/students/add/', AdminAddStudentAPIView.as_view(), name='admin-add-student'),
-    path('admin/students', StudentListAPIView.as_view(), name='student-list'),
+    path('admin/students/', StudentListAPIView.as_view(), name='student-list'),
     path('admin/students/<str:pk>/', StudentDetailAPIView.as_view(), name='student-detail'),
     path('admin/students-bulk-upload/', BulkUploadStudentsAPIView.as_view(), name='students-bulk-upload'),
 
