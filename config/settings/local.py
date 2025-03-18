@@ -47,6 +47,6 @@ EMAIL_HOST_USER = "shubhamjadhav190@gmail.com"
 EMAIL_HOST_PASSWORD = "odei empj myvi wfko"
 
 ALLOWED_HOSTS=['viable-reasonably-goldfish.ngrok-free.app', 'localhost','coding1.questplus.in','coding2.questplus.in']
-CSRF_TRUSTED_ORIGINS=['https://viable-reasonably-goldfish.ngrok-free.app','http://localhost:3000','http://coding1.questplus.in','http://coding2.questplus.in']
+CSRF_TRUSTED_ORIGINS=['https://viable-reasonably-goldfish.ngrok-free.app','http://localhost:3000','https://coding1.questplus.in','https://coding2.questplus.in']
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
