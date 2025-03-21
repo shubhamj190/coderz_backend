@@ -55,17 +55,30 @@ class CustomUserManager(BaseUserManager):
             raise ValueError('Superuser must have is_superuser=True.')
         return self.create_user(UserName, Email, password, **extra_fields)
 
-class Institution(models.Model):
-    # Minimal representation for the FK reference; adjust as needed.
-    InstitutionId = models.IntegerField(primary_key=True, db_column='InstitutionId')
-    # Add other fields if required.
+class Institutions(models.Model):
+    InstitutionId = models.AutoField(primary_key=True, db_column="InstitutionId")
+    InstitutionName = models.CharField(max_length=100, db_column="InstitutionName")
+    EmailId = models.CharField(max_length=200, db_column="EmailId")
+    PhoneNo = models.CharField(max_length=50, null=True, blank=True, db_column="PhoneNo")
+    Address = models.CharField(max_length=200, null=True, blank=True, db_column="Address")
+    City = models.CharField(max_length=50, null=True, blank=True, db_column="City")
+    State = models.CharField(max_length=50, null=True, blank=True, db_column="State")
+    Country = models.CharField(max_length=100, null=True, blank=True, db_column="Country")
+    Pin = models.CharField(max_length=15, null=True, blank=True, db_column="Pin")
+    Logopath = models.CharField(max_length=150, db_column="Logopath")  # Assuming it's a file path
+    ConfigJson = models.JSONField(null=True, blank=True, db_column="ConfigJson")  # Storing JSON data
+    ValidityEndDate = models.DateTimeField(null=True, blank=True, db_column="ValidityEndDate")
+    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column="ModifiedOn")
+    IsActive = models.BooleanField(default=True, db_column="IsActive")
+    IsDeleted = models.BooleanField(default=False, db_column="IsDeleted")
 
     class Meta:
-        db_table = 'Institutions'
-        managed = False
+        db_table = "Institutions"
+        managed = False  # Set to False if this table already exists in MSSQL
+        ordering = ["InstitutionName"]
 
     def __str__(self):
-        return str(self.InstitutionId)
+        return self.InstitutionName
 class User(AbstractBaseUser, PermissionsMixin):
     UserId = models.CharField(max_length=256, primary_key=True, default=uuid.uuid4, editable=False, db_column='UserId')
     UserName = models.CharField(max_length=256, unique=True, null=True, blank=True, db_column='UserName')
