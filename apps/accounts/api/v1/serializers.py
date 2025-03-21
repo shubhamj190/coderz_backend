@@ -2,6 +2,7 @@
 from django.forms import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
+from apps.accounts.models.grades import GradeDivisionMapping
 from apps.accounts.models.user import UserDetails, User
 from apps.accounts.models import Grade, Division
 from django.db import transaction
@@ -316,3 +317,20 @@ class StudentDetailSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+
+class GradeDivisionMappingSerializer(serializers.ModelSerializer):
+    grade = serializers.CharField()
+    division = serializers.CharField()
+
+    class Meta:
+        model = GradeDivisionMapping
+        fields = ['grade', 'division']
+
+    def create(self, validated_data):
+        grade_name = validated_data['grade'].upper()  # Convert to uppercase before saving
+        division_name = validated_data['division'].upper()  # Convert to uppercase before saving
+        
+        grade, _ = Grade.objects.get_or_create(grade_name=grade_name)
+        division, _ = Division.objects.get_or_create(name=division_name)
+
+        return GradeDivisionMapping.objects.create(grade=grade, division=division)

@@ -53,3 +53,16 @@ class Division(models.Model):
 
     def __str__(self):
         return f"{self.DivisionName}"
+    
+class GradeDivisionMapping(models.Model):
+    id = models.AutoField(primary_key=True, db_column='id')
+    Grade = models.ForeignKey(Grade, on_delete=models.CASCADE, db_column='GradeId', related_name='grade_division_mappings')
+    Division = models.ForeignKey(Division, on_delete=models.CASCADE, db_column='DivisionId', related_name="division_grades_mappings")
+    IsActive = models.BooleanField(default=True, db_column='IsActive')
+
+    class Meta:
+        db_table = 'GradeDivisionMapping'
+        unique_together = ('Grade', 'Division')  # Ensures no duplicate mappings
+
+    def __str__(self):
+        return f"{self.Grade.GradeName} -> {self.Division.DivisionName}"

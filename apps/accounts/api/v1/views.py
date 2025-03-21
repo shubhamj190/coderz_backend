@@ -1,5 +1,6 @@
 import base64
 import logging
+from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -7,7 +8,7 @@ from rest_framework import status
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from apps.accounts.models.grades import Division, Grade
+from apps.accounts.models.grades import Division, Grade, GradeDivisionMapping
 from apps.accounts.tasks import process_bulk_upload_students
 from apps.accounts.utils import user_name_creator
 from core.middlewares.global_pagination import StandardResultsSetPagination
@@ -19,9 +20,11 @@ from templated_email import send_templated_mail
 from django.conf import settings
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import transaction
+from django.db.models import Prefetch
 
 from .serializers import (
     DivisionSerializer,
+    GradeDivisionMappingSerializer,
     GradeSerializer,
     StudentCreateSerializer,
     StudentDetailSerializer,
@@ -563,3 +566,146 @@ class BulkUploadStudentsAPIView(APIView):
         # Enqueue the task asynchronously
         task = process_bulk_upload_students(csv_data)
         return Response({"message": "Bulk upload initiated.", "task_id": "task.id"}, status=status.HTTP_202_ACCEPTED)
+    
+class GradeDivisionMappingAPIView(APIView):
+    
+    def get(self, request):
+        """
+        Fetch all grade-division mappings with required response structure.
+        """
+        grades = Grade.objects.prefetch_related(
+            Prefetch(
+                'grade_division_mappings',
+                queryset=GradeDivisionMapping.objects.select_related('Division'),
+                to_attr='divisions_list'
+            )
+        )
+
+        response_data = []
+        for grade in grades:
+            divisions = [mapping.Division.DivisionName for mapping in grade.divisions_list]
+            response_data.append({
+                "id": grade.id,
+                "class": str(grade.GradeId),
+                "status": 1,
+                "grade": grade.GradeName,
+                "class_name": grade.GradeName,
+                "divisions": ",".join(divisions)
+            })
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    
+    def post(self, request):
+        """
+        Create a new Grade-Division mapping. Multiple divisions can be added at once.
+        """
+        grade_name = request.data.get("grade", "").strip().upper()
+        divisions = request.data.get("divisions", [])
+
+        if not grade_name or not divisions:
+            return Response({"error": "Grade and Divisions are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Convert division names to uppercase and remove duplicates
+        division_names = list(set([d.strip().upper() for d in divisions if d.strip()]))
+
+        try:
+            with transaction.atomic():
+                # Ensure the grade exists
+                grade, _ = Grade.objects.get_or_create(GradeName=grade_name)
+
+                # Add divisions to the grade
+                added_divisions = []
+                for div_name in division_names:
+                    division, _ = Division.objects.get_or_create(DivisionName=div_name)
+                    mapping, created = GradeDivisionMapping.objects.get_or_create(Grade=grade, Division=division)
+                    if created:
+                        added_divisions.append(div_name)
+
+                return Response({"message": "Divisions added successfully", "added_divisions": added_divisions}, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    
+    def delete(self, request):
+        """
+        Delete a specific Grade-Division mapping.
+        """
+        grade_name = request.data.get("grade", "").strip().upper()
+        division_name = request.data.get("division", "").strip().upper()
+
+        if not grade_name or not division_name:
+            return Response({"error": "Grade and Division are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            grade = Grade.objects.get(GradeName=grade_name)
+            division = Division.objects.get(DivisionName=division_name)
+
+            deleted, _ = GradeDivisionMapping.objects.filter(Grade=grade, Division=division).delete()
+
+            if deleted:
+                return Response({"message": "Mapping deleted successfully"}, status=status.HTTP_200_OK)
+            return Response({"error": "Mapping not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        except Grade.DoesNotExist:
+            return Response({"error": "Grade not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Division.DoesNotExist:
+            return Response({"error": "Division not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+class SingleGradeDivisionMappingAPIView(APIView):
+
+    def get(self, request, grade_id=None):
+        """
+        Retrieve divisions for a specific grade.
+        """
+        if not grade_id:
+            return Response({"error": "Grade name is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            grade = Grade.objects.get(GradeId=grade_id)  # Case-insensitive match
+            divisions = GradeDivisionMapping.objects.filter(Grade=grade).values_list("Division__DivisionName", flat=True)
+            
+            return Response({
+                "id": grade.id,
+                "grade": grade.GradeName,
+                "status": grade.IsActive,
+                "class_name": grade.GradeName,
+                "divisions": list(divisions)
+            }, status=status.HTTP_200_OK)
+
+        except Grade.DoesNotExist:
+            return Response({"error": "Grade not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request, grade_id=None):
+        """
+        Update divisions for a specific grade.
+        """
+        if not grade_id:
+            return Response({"error": "Grade name is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        divisions = request.data.get("divisions", [])
+        if not isinstance(divisions, list) or not divisions:
+            return Response({"error": "A valid list of divisions is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        division_names = list(set([d.strip().upper() for d in divisions if d.strip()]))
+
+        try:
+            with transaction.atomic():
+                grade = Grade.objects.get(GradeId=grade_id)  # Case-insensitive match
+
+                # Remove old mappings
+                GradeDivisionMapping.objects.filter(Grade=grade).delete()
+
+                updated_divisions = []
+                for div_name in division_names:
+                    division, _ = Division.objects.get_or_create(DivisionName=div_name)
+                    GradeDivisionMapping.objects.create(Grade=grade, Division=division)
+                    updated_divisions.append(div_name)
+
+                return Response({"message": "Divisions updated successfully", "updated_divisions": updated_divisions}, status=status.HTTP_200_OK)
+
+        except Grade.DoesNotExist:
+            return Response({"error": "Grade not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

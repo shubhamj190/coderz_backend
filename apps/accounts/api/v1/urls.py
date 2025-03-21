@@ -8,15 +8,16 @@ from .views import (
     BulkUploadStudentsAPIView,
     DivisionListCreateAPIView,
     DivisionRetrieveUpdateDestroyAPIView,
+    GradeDivisionMappingAPIView,
     GradeListCreateAPIView,
     GradeRetrieveUpdateDestroyAPIView,
     ResetPasswordAPIView,
+    SingleGradeDivisionMappingAPIView,
     StudentDetailAPIView,
     StudentListAPIView,
     TeacherDetailAPIView,
     TeacherListAPIView,
     StudentSSOLoginView,
-    TeacherSignupView,
     UnifiedForgotPasswordAPIView,
     UnifiedLoginView,
     UnifiedLogoutView,
@@ -51,6 +52,8 @@ urlpatterns = [
     path('admin/students/<str:pk>/', StudentDetailAPIView.as_view(), name='student-detail'),
     path('admin/students-bulk-upload/', BulkUploadStudentsAPIView.as_view(), name='students-bulk-upload'),
 
-
+    # gradedivision mapping
+    path('admin/grade-division-mapping/', GradeDivisionMappingAPIView.as_view(), name='grade-division-mapping'),
+    path('admin/single-grade-division/<str:grade_id>/', SingleGradeDivisionMappingAPIView.as_view(), name='grade-division-detail'),
 
 ]
