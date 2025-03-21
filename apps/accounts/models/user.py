@@ -180,20 +180,6 @@ class UserDetails(models.Model):
     date_of_birth = models.DateField(null=True, blank=True, db_column='date_of_birth')
     profile_pic = models.ImageField(upload_to='profile_pics/', blank=True, null=True, db_column='ProfilePic')
 
-    # For Teachers: allow multiple grades and divisions (optional)
-    assigned_grades = models.ManyToManyField(
-        Grade,
-        through='TeacherAssignedGrade',
-        related_name='teacher_details',
-        blank=True
-    )
-    assigned_divisions = models.ManyToManyField(
-        Division,
-        through='TeacherAssignedDivision',
-        related_name='teacher_details',
-        blank=True
-    )
-
     class Meta:
         db_table = 'UserDetails'
         # managed = False  # Do not manage this table via Django migrations
@@ -247,82 +233,58 @@ class GroupMaster(models.Model):
         managed = False
 
     def save(self, *args, **kwargs):
-        self.GroupId = self.GID
+        self.GroupId = f"G{self.GID}"
         super().save(*args, **kwargs)
 
     def __str__(self):
         return str(self.GID)
-    
-class TeacherAssignedGrade(models.Model):
-    userdetails = models.ForeignKey('accounts.UserDetails', on_delete=models.CASCADE,db_column='UserId')
-    grade = models.ForeignKey(Grade, on_delete=models.CASCADE,db_column='GradeId')
-    
+
+# this is specific for students
+class UserGroup(models.Model):
+    """
+    Represents the user group membership from the UserGroup table.
+    The composite key is enforced using unique_together on:
+    (UserId, LocationId, GroupId, IsDeleted)
+    """
+    # Disable Django's auto-generated primary key.
+    id = None
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        db_column='UserId',
+        related_name='user_groups'
+    )
+    LocationId = models.CharField(max_length=50, db_column='LocationId')
+    GroupId = models.CharField(max_length=50, db_column='GroupId')
+    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn')
+    IsDeleted = models.BooleanField(default=False, db_column='IsDeleted')
+    Import_Code = models.CharField(max_length=50, null=True, blank=True, db_column='Import_Code')
+    LID = models.ForeignKey(
+        Location,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        db_column='LID'
+    )
+    GID = models.ForeignKey(
+        GroupMaster,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        db_column='GID'
+    )
+
+    def save(self, *args, **kwargs):
+        self.LocationId = self.LID.LocationId
+        self.GroupId = self.GID.GroupId
+        super().save(*args, **kwargs)
+
     class Meta:
-        db_table = 'TeacherAssignedGrade'
-        unique_together = (('userdetails', 'grade'),)
-        managed = True  # Django will manage this table
+        db_table = 'UserGroup'
+        managed = False  # Tells Django not to manage (create/modify) this existing table.
+        unique_together = (('user', 'LocationId', 'GroupId', 'IsDeleted'),)
+        verbose_name = "User Group"
+        verbose_name_plural = "User Groups"
 
     def __str__(self):
-        return f"{self.userdetails.user.UserName} - {self.grade.GradeName}"
-
-class TeacherAssignedDivision(models.Model):
-    userdetails = models.ForeignKey('accounts.UserDetails', on_delete=models.CASCADE, db_column='UserId')
-    division = models.ForeignKey(Division, on_delete=models.CASCADE,db_column='DivisionId')
-    
-    class Meta:
-        db_table = 'TeacherAssignedDivision'
-        unique_together = (('userdetails', 'division'),)
-        managed = True  # Django will manage this table
-
-    def __str__(self):
-        return f"{self.userdetails.user.UserName} - {self.division.DivisionName}"
-
-
-# class UserGroup(models.Model):
-#     """
-#     Represents the user group membership from the UserGroup table.
-#     The composite key is enforced using unique_together on:
-#     (UserId, LocationId, GroupId, IsDeleted)
-#     """
-#     # Disable Django's auto-generated primary key.
-#     id = None
-#     user = models.ForeignKey(
-#         User,
-#         on_delete=models.CASCADE,
-#         db_column='UserId',
-#         related_name='user_groups'
-#     )
-#     LocationId = models.CharField(max_length=50, db_column='LocationId')
-#     GroupId = models.CharField(max_length=50, db_column='GroupId')
-#     ModifiedOn = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn')
-#     IsDeleted = models.BooleanField(default=False, db_column='IsDeleted')
-#     Import_Code = models.CharField(max_length=50, null=True, blank=True, db_column='Import_Code')
-#     LID = models.ForeignKey(
-#         Location,
-#         on_delete=models.CASCADE,
-#         null=True,
-#         blank=True,
-#         db_column='LID'
-#     )
-#     GID = models.ForeignKey(
-#         GroupMaster,
-#         on_delete=models.CASCADE,
-#         null=True,
-#         blank=True,
-#         db_column='GID'
-#     )
-
-#     def save(self, *args, **kwargs):
-#         self.LocationId = self.LID.LocationId
-#         self.GroupId = self.GID.GroupId
-#         super().save(*args, **kwargs)
-
-#     class Meta:
-#         db_table = 'UserGroup'
-#         managed = False  # Tells Django not to manage (create/modify) this existing table.
-#         unique_together = (('user', 'LocationId', 'GroupId', 'IsDeleted'),)
-#         verbose_name = "User Group"
-#         verbose_name_plural = "User Groups"
-
-#     def __str__(self):
-#         return f"{self.user.UserName} | {self.LocationId} | {self.GroupId} | Deleted: {self.IsDeleted}"
+        return f"{self.user.UserName} | {self.LocationId} | {self.GroupId} | Deleted: {self.IsDeleted}"

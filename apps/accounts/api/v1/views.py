@@ -21,6 +21,7 @@ from django.conf import settings
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import transaction
 from django.db.models import Prefetch
+from django.utils.timezone import now
 
 from .serializers import (
     DivisionSerializer,
@@ -35,7 +36,7 @@ from .serializers import (
     CustomTokenObtainPairSerializer
 )
 
-from apps.accounts.models.user import User, UserDetails
+from apps.accounts.models.user import GroupMaster, User, UserDetails
 
 logger = logging.getLogger(__name__)
 
@@ -598,7 +599,7 @@ class GradeDivisionMappingAPIView(APIView):
     
     def post(self, request):
         """
-        Create a new Grade-Division mapping. Multiple divisions can be added at once.
+        Create a new Grade-Division mapping and automatically generate GroupMaster entries.
         """
         grade_name = request.data.get("grade", "").strip().upper()
         divisions = request.data.get("divisions", [])
@@ -614,15 +615,42 @@ class GradeDivisionMappingAPIView(APIView):
                 # Ensure the grade exists
                 grade, _ = Grade.objects.get_or_create(GradeName=grade_name)
 
-                # Add divisions to the grade
                 added_divisions = []
+                created_groups = []
+
                 for div_name in division_names:
                     division, _ = Division.objects.get_or_create(DivisionName=div_name)
                     mapping, created = GradeDivisionMapping.objects.get_or_create(Grade=grade, Division=division)
+                    
                     if created:
                         added_divisions.append(div_name)
 
-                return Response({"message": "Divisions added successfully", "added_divisions": added_divisions}, status=status.HTTP_201_CREATED)
+                        # Create GroupMaster entry for each (Grade, Division) pair
+                        group_name = f"{grade.GradeName} - {div_name}"
+                        group_short_name = f"{grade.GradeName} - {div_name}"
+                        
+                        group_master, group_created = GroupMaster.objects.get_or_create(
+                            GroupName=group_name,
+                            defaults={
+                                "GroupShortName": group_short_name,
+                                "LocationId": 2,  # Adjust as needed
+                                "IsActive": True,
+                                "IsDeleted": False,
+                                "ClassId": grade.id,
+                                "SubClassId": 1,  # Adjust if needed
+                                "SequenceNo": None,
+                                "ModifiedOn": now()
+                            }
+                        )
+                        
+                        if group_created:
+                            created_groups.append(group_name)
+
+                return Response({
+                    "message": "Divisions and GroupMaster entries added successfully",
+                    "added_divisions": added_divisions,
+                    "created_groups": created_groups
+                }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
