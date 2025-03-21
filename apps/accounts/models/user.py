@@ -301,3 +301,35 @@ class UserGroup(models.Model):
 
     def __str__(self):
         return f"{self.user.UserName} | {self.LocationId} | {self.GroupId} | Deleted: {self.IsDeleted}"
+    
+class TeacherLocationDetails(models.Model):
+    MappingId = models.AutoField(primary_key=True, db_column="MappingId")
+    UserId = models.CharField(max_length=50, db_column="UserId")
+    InstitutionId = models.IntegerField(db_column="InstitutionId")
+    LocationId = models.CharField(max_length=50, db_column="LocationId")
+    GroupId = models.CharField(max_length=50, db_column="GroupId")
+    IsDeleted = models.BooleanField(default=False, db_column="IsDeleted")
+    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column="ModifiedOn")
+    ClassId = models.IntegerField(null=True, blank=True, db_column="ClassId")
+    SubClassId = models.IntegerField(null=True, blank=True, db_column="SubClassId")
+    LID = models.ForeignKey(
+        Location, 
+        null=True, 
+        blank=True, 
+        on_delete=models.SET_NULL, 
+        db_column="LID"
+    )
+    GID = models.ForeignKey(
+        GroupMaster, 
+        null=True, 
+        blank=True, 
+        on_delete=models.SET_NULL, 
+        db_column="GID"
+    )
+
+    class Meta:
+        db_table = "TeacherLocationDetails"
+        managed = False  # Prevents Django from modifying the existing MSSQL table
+
+    def __str__(self):
+        return f"Mapping {self.MappingId} - User {self.UserId}"
