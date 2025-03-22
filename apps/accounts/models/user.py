@@ -68,7 +68,7 @@ class Institutions(models.Model):
     Logopath = models.CharField(max_length=150, db_column="Logopath")  # Assuming it's a file path
     ConfigJson = models.JSONField(null=True, blank=True, db_column="ConfigJson")  # Storing JSON data
     ValidityEndDate = models.DateTimeField(null=True, blank=True, db_column="ValidityEndDate")
-    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column="ModifiedOn")
+    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column="ModifiedOn",auto_now=True)
     IsActive = models.BooleanField(default=True, db_column="IsActive")
     IsDeleted = models.BooleanField(default=False, db_column="IsDeleted")
 
@@ -171,7 +171,7 @@ class UserDetails(models.Model):
     LastUsedDevice = models.CharField(max_length=50, blank=True, null=True, db_column='LastUsedDevice')
     PromoCode = models.CharField(max_length=10, blank=True, null=True, db_column='PromoCode')
     PromoRefCode = models.CharField(max_length=10, blank=True, null=True, db_column='PromoRefCode')
-    ModifiedOn = models.DateTimeField(blank=True, null=True, db_column='ModifiedOn')
+    ModifiedOn = models.DateTimeField(blank=True, null=True, db_column='ModifiedOn',auto_now=True)
     IsActive = models.BooleanField(default=True, db_column='IsActive')
     IsDeleted = models.BooleanField(default=False, db_column='IsDeleted')
     CustomerGST = models.CharField(max_length=500, blank=True, null=True, db_column='CustomerGST')
@@ -207,7 +207,7 @@ class Location(models.Model):
     IsDeleted = models.BooleanField(db_column='IsDeleted')
     InstitutionId = models.IntegerField(db_column='InstitutionId')
     DoNotTrack = models.BooleanField(null=True, blank=True, db_column='DoNotTrack')
-    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn')
+    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn',auto_now=True)
     IsErpUsed = models.BooleanField(null=True, blank=True, db_column='IsErpUsed')
     ERP_API_Url = models.TextField(null=True, blank=True, db_column='ERP_API_Url')
     # Add additional fields if needed
@@ -237,7 +237,7 @@ class GroupMaster(models.Model):
     ClassId = models.IntegerField(null=True, blank=True, db_column='ClassId')
     SubClassId = models.IntegerField(null=True, blank=True, db_column='SubClassId')
     SequenceNo = models.IntegerField(null=True, blank=True, db_column='SequenceNo')
-    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn')
+    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn',auto_now=True)
     # Add additional fields if needed
 
     class Meta:
@@ -268,7 +268,7 @@ class UserGroup(models.Model):
     )
     LocationId = models.CharField(max_length=50, db_column='LocationId')
     GroupId = models.CharField(max_length=50, db_column='GroupId')
-    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn')
+    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn',auto_now=True)
     IsDeleted = models.BooleanField(default=False, db_column='IsDeleted')
     Import_Code = models.CharField(max_length=50, null=True, blank=True, db_column='Import_Code')
     LID = models.ForeignKey(

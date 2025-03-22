@@ -8,7 +8,7 @@ class Board(models.Model):
     SequenceNo = models.IntegerField(db_column='SequenceNo')
     IsActive = models.BooleanField(db_column='IsActive')
     IsDeleted = models.BooleanField(db_column='IsDeleted')
-    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn')
+    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn', auto_now=True)
     ModifiedBy = models.CharField(max_length=50, blank=True, null=True, db_column='ModifiedBy')
 
     class Meta:
