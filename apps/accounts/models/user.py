@@ -309,7 +309,7 @@ class TeacherLocationDetails(models.Model):
     LocationId = models.CharField(max_length=50, db_column="LocationId")
     GroupId = models.CharField(max_length=50, db_column="GroupId")
     IsDeleted = models.BooleanField(default=False, db_column="IsDeleted")
-    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column="ModifiedOn")
+    ModifiedOn = models.DateTimeField(auto_now=True,null=True, blank=True, db_column="ModifiedOn")
     ClassId = models.IntegerField(null=True, blank=True, db_column="ClassId")
     SubClassId = models.IntegerField(null=True, blank=True, db_column="SubClassId")
     LID = models.ForeignKey(
