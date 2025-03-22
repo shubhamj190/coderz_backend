@@ -50,15 +50,15 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-    'DEFAULT_THROTTLE_CLASSES': [
-        'core.throttling.role_based.UserRoleRateThrottle',
-    ],
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/day',
-        'student': '1000/day',
-        'teacher': '2000/day',
-        'admin': '5000/day',
-    }
+    # 'DEFAULT_THROTTLE_CLASSES': [
+    #     'core.throttling.role_based.UserRoleRateThrottle',
+    # ],
+    # 'DEFAULT_THROTTLE_RATES': {
+    #     'anon': '100/day',
+    #     'student': '1000/day',
+    #     'teacher': '2000/day',
+    #     'admin': '5000/day',
+    # }
 }
 
 SIMPLE_JWT = {
