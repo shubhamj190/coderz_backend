@@ -139,63 +139,96 @@ class TeacherListSerializer(serializers.ModelSerializer):
     
 class TeacherDetailSerializer(serializers.ModelSerializer):
     # Fields from the related User model
-    FirstName = serializers.CharField( required=True)
-    LastName = serializers.CharField( required=True)
-    Gender = serializers.CharField( required=True)
+    FirstName = serializers.CharField(required=True)
+    LastName = serializers.CharField(required=True)
+    Gender = serializers.CharField(required=True)
     email = serializers.CharField(source="user.Email", read_only=True)
     UserId = serializers.CharField(source="user.UserId", read_only=True)
+    UserName = serializers.CharField(source="user.UserName", read_only=True)
     IsActive = serializers.BooleanField(source="user.IsActive", read_only=True)
 
-    # Explicitly declare ManyToMany relationships
-    assigned_grades = serializers.PrimaryKeyRelatedField(
-        queryset=Grade.objects.all(), many=True, required=False
-    )
-    assigned_divisions = serializers.PrimaryKeyRelatedField(
-        queryset=Division.objects.all(), many=True, required=False
-    )
-    
+    # Accept grade-division mapping from frontend
+    grade_division_mapping = serializers.SerializerMethodField()
+
     class Meta:
         model = UserDetails
         fields = [
-            "UserId",               # Teacher's primary key (UserId from related user)
-            "FirstName",            # Updatable user first name
-            "LastName",        # Updatable user last name
-            "email",           # Updatable user gender
-            "Gender",  # Updatable user phone number
+            "UserName",
+            "UserId",
+            "FirstName",
+            "LastName",
+            "email",
+            "Gender",
             "IsActive",
-            "assigned_grades",
-            "assigned_divisions",
+            "grade_division_mapping",
         ]
-    
-    def get_full_name(self, obj):
-        first = obj.FirstName or ""
-        last = obj.LastName or ""
-        return f"{first} {last}".strip()
+    def get_grade_division_mapping(self, obj):
+        """Fetch grade and division mapping from TeacherLocationDetails"""
+        mapping = {}
+
+        # Fetch all related TeacherLocationDetails for the given teacher
+        teacher_location_details = TeacherLocationDetails.objects.filter(UserId=obj.user.UserId)
+
+        for entry in teacher_location_details:
+            group = entry.GID  # Assuming `group` is a FK to `GroupMaster`
+            if group:
+                parts = group.GroupName.split(" - ", 1)  # Split into Grade and Division
+                if len(parts) == 2:
+                    grade_name, division_name = parts
+                    if grade_name not in mapping:
+                        mapping[grade_name] = []
+                    mapping[grade_name].append(division_name)
+
+        return mapping
 
     def update(self, instance, validated_data):
-        # Extract and update nested user data.
-        user_data = validated_data.pop("user", {})
         user = instance.user
+        user_data = validated_data.pop("user", {})
+        
+        # Update User model fields
         for attr, value in user_data.items():
-            if attr == "UserName":
-                continue
             setattr(user, attr, value)
         user.save()
-        # Extract many-to-many fields separately.
-        assigned_grades = validated_data.pop("assigned_grades", None)
-        assigned_divisions = validated_data.pop("assigned_divisions", None)
-        
-        # Update the remaining fields on UserDetails.
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        
-        # Update many-to-many relationships if provided.
-        if assigned_grades is not None:
-            instance.assigned_grades.set(assigned_grades)
-        if assigned_divisions is not None:
-            instance.assigned_divisions.set(assigned_divisions)
-        
+
+        # Extract grade-division mapping
+        grade_division_mapping = validated_data.pop("grade_division_mapping", {})
+
+        with transaction.atomic():
+            # Update other fields in UserDetails
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+            instance.save()
+
+            # Process grade-division mapping
+            for grade, divisions in grade_division_mapping.items():
+                for division in divisions:
+                    group_name = f"{grade} {division}"
+                    
+                    # Fetch GroupId from GroupMaster
+                    group = GroupMaster.objects.filter(GroupName=group_name).first()
+                    if not group:
+                        continue  # Skip if no matching group found
+
+                    # Check if TeacherLocationDetails entry exists
+                    teacher_location = TeacherLocationDetails.objects.filter(
+                        UserId=user.UserId,
+                        InstitutionId=user.InstitutionId
+                    ).first()
+
+                    if teacher_location:
+                        # Update existing entry
+                        teacher_location.GroupId = group.GID
+                        teacher_location.save()
+                    else:
+                        # Create new entry if not exists
+                        TeacherLocationDetails.objects.create(
+                            UserId=user.UserId,
+                            InstitutionId=user.InstitutionId,
+                            GroupId=group.GID,
+                            LocationId="some_location_id",  # Replace with actual logic if needed
+                            IsDeleted=False,
+                        )
+
         return instance
     
 class StudentCreateSerializer(serializers.ModelSerializer):
