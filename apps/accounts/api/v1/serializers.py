@@ -334,39 +334,75 @@ class StudentDetailSerializer(serializers.ModelSerializer):
 
     # Correct field names to match UserDetails model
     GradeId = serializers.PrimaryKeyRelatedField(queryset=Grade.objects.all(), required=True)
-    DivisionId = serializers.PrimaryKeyRelatedField(queryset=Division.objects.all(), required=True)
-    
+
+    # ❌ Remove DivisionId from response (only used for input)
+    DivisionId = serializers.SerializerMethodField()
+
     class Meta:
         model = UserDetails
         fields = [
-            "UserId",                # Student's primary key
-            "FirstName",         # Updatable user first name
-            "LastName",          # Updatable user last name
-            "Gender",            # Updatable user gender
-            "Email",             # Updatable user email
-            "PhoneNumber",       # Updatable user phone number
+            "UserId",         # Student's primary key
+            "FirstName",      # Updatable user first name
+            "LastName",       # Updatable user last name
+            "Gender",         # Updatable user gender
+            "Email",          # Updatable user email
+            "PhoneNumber",    # Updatable user phone number
             "date_of_birth",
             "GradeId",
-            "DivisionId",
             "AdmissionNo",
-            "IsActive"          # Student's active status
+            "DivisionId",     # Used only for input
+            "IsActive"        # Student's active status
         ]
-    
+        extra_kwargs = {"DivisionId": {"write_only": True}}  # Ensure it's used only for input
+
+    def get_DivisionId(self, obj):
+        """Fetch DivisionId from UserGroup → GroupMaster dynamically."""
+        try:
+            # Get the user's group
+            user_group = UserGroup.objects.filter(user=obj.user.UserId).first()
+            if user_group:
+                group_master = user_group.GID  # GroupMaster object
+                if group_master:
+                    # Extract Division from GroupName (assuming format: "GradeName - DivisionName")
+                    group_name_parts = group_master.GroupName.split(" - ")
+                    if len(group_name_parts) > 1:
+                        division_name = group_name_parts[1]
+                        division = Division.objects.filter(DivisionName=division_name).first()
+                        if division:
+                            return division.DivisionId  # Return DivisionId
+        except Exception as e:
+            return None  # Return None if not found or error occurs
+        return None
+
     def update(self, instance, validated_data):
         # Extract nested user data if provided.
         user_data = validated_data.pop("user", {})
         user = instance.user
         for attr, value in user_data.items():
-            # Skip updating the username even if provided.
-            if attr == "UserName":
+            if attr == "UserName":  # Skip updating username
                 continue
             setattr(user, attr, value)
         user.save()
-        
+
+        # Extract DivisionId (not stored in UserDetails)
+        division = validated_data.pop("DivisionId", None)
+
         # Update Student-specific fields.
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+
         instance.save()
+
+        # ✅ Process Division Logic (if required)
+        if division:
+            group_name = f"{instance.GradeId.GradeName} - {division.DivisionName}"
+            group = GroupMaster.objects.filter(GroupName=group_name).first()
+            if group:
+                UserGroup.objects.update_or_create(
+                    user=user,
+                    defaults={"GID": group, "IsDeleted": False}
+                )
+
         return instance
 
 class GradeDivisionMappingSerializer(serializers.ModelSerializer):

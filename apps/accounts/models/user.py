@@ -260,12 +260,7 @@ class UserGroup(models.Model):
     """
     # Disable Django's auto-generated primary key.
     id = None
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        db_column='UserId',
-        related_name='user_groups'
-    )
+    user = models.CharField(max_length=50,db_column='UserId',primary_key=True)
     LocationId = models.CharField(max_length=50, db_column='LocationId')
     GroupId = models.CharField(max_length=50, db_column='GroupId')
     ModifiedOn = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn',auto_now=True)
