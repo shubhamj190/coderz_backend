@@ -149,6 +149,7 @@ class TeacherDetailSerializer(serializers.ModelSerializer):
 
     # Accept grade-division mapping from frontend
     grade_division_mapping = serializers.SerializerMethodField()
+    grade_division_mapping_update = serializers.JSONField(write_only=True)
 
     class Meta:
         model = UserDetails
@@ -161,6 +162,7 @@ class TeacherDetailSerializer(serializers.ModelSerializer):
             "Gender",
             "IsActive",
             "grade_division_mapping",
+            "grade_division_mapping_update",
         ]
     def get_grade_division_mapping(self, obj):
         """Fetch grade and division mapping from TeacherLocationDetails"""
@@ -191,43 +193,33 @@ class TeacherDetailSerializer(serializers.ModelSerializer):
         user.save()
 
         # Extract grade-division mapping
-        grade_division_mapping = validated_data.pop("grade_division_mapping", {})
-
+        grade_division_mapping = validated_data.pop("grade_division_mapping_update", {})
         with transaction.atomic():
             # Update other fields in UserDetails
             for attr, value in validated_data.items():
                 setattr(instance, attr, value)
             instance.save()
 
-            # Process grade-division mapping
+            # 🛑 Delete all existing mappings before inserting new ones
+            TeacherLocationDetails.objects.filter(UserId=user.UserId).delete()
+
+            # 🔄 Process grade-division mapping: Create fresh entries
             for grade, divisions in grade_division_mapping.items():
                 for division in divisions:
-                    group_name = f"{grade} {division}"
-                    
-                    # Fetch GroupId from GroupMaster
+                    group_name = f"{grade} - {division}"
                     group = GroupMaster.objects.filter(GroupName=group_name).first()
                     if not group:
                         continue  # Skip if no matching group found
 
-                    # Check if TeacherLocationDetails entry exists
-                    teacher_location = TeacherLocationDetails.objects.filter(
+                    # ✅ Create new TeacherLocationDetails entry
+                    TeacherLocationDetails.objects.create(
                         UserId=user.UserId,
-                        InstitutionId=user.InstitutionId
-                    ).first()
-
-                    if teacher_location:
-                        # Update existing entry
-                        teacher_location.GroupId = group.GID
-                        teacher_location.save()
-                    else:
-                        # Create new entry if not exists
-                        TeacherLocationDetails.objects.create(
-                            UserId=user.UserId,
-                            InstitutionId=user.InstitutionId,
-                            GroupId=group.GID,
-                            LocationId="some_location_id",  # Replace with actual logic if needed
-                            IsDeleted=False,
-                        )
+                        InstitutionId=2,
+                        LocationId=2,
+                        GroupId=group.GroupId,
+                        LID=Location.objects.get(LID=2),
+                        GID=GroupMaster.objects.get(GroupId=group.GroupId),
+                    )
 
         return instance
     
