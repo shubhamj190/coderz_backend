@@ -314,7 +314,7 @@ class StudentListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserDetails
-        fields = ['full_name', 'email','UserId', 'UserName', 'Gender', 'IsActive','GradeId','DivisionId','UserType']
+        fields = ['full_name', 'email','UserId', 'UserName', 'Gender', 'IsActive','GradeId','UserType']
 
     def get_full_name(self, obj):
         # Combine first and last names; adjust as needed.
