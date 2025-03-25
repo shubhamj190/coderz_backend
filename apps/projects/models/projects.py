@@ -5,28 +5,66 @@ from apps.accounts.models.grades import Division, Grade
 from apps.accounts.models.user import User
 
 class ClassroomProject(models.Model):
-    title = models.CharField(max_length=255)         # e.g. “Odd-Even Number”
+    title = models.CharField(max_length=255)  # e.g., “Odd-Even Number”
     description = models.TextField(blank=True, null=True)
-    grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name="projects")
-    division = models.ForeignKey(Division, on_delete=models.CASCADE, related_name="projects")
+    grade = models.ForeignKey("accounts.Grade", on_delete=models.CASCADE, related_name="projects")
+    division = models.ForeignKey("accounts.Division", on_delete=models.CASCADE, related_name="projects")
+    group = models.ForeignKey("accounts.GroupMaster", on_delete=models.CASCADE, related_name="projects")
     assigned_teacher = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_projects"
     )
-    # If you want an overall image or icon for the project card:
+    # Thumbnail for project
     thumbnail = models.ImageField(upload_to="projects/thumbnails/", blank=True, null=True)
+    due_date = models.DateField(blank=True, null=True)
 
-    # Additional meta fields
+    # Meta fields
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
-    due_date = models.DateField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.title} (Grade: {self.grade.GradeName}, Division: {self.division.DivisionName})"
-    
+
     class Meta:
-        db_table = 'ClassroomProject'
+        db_table = "ClassroomProject"
         managed = False
-    
+
+class ProjectAsset(models.Model):
+    """
+    Stores different types of assets (images, videos, PDFs, PPTs, etc.)
+    related to a ClassroomProject.
+    """
+    project = models.ForeignKey(ClassroomProject, on_delete=models.CASCADE, related_name="assets")
+    file = models.FileField(upload_to="projects/assets/")
+    file_type = models.CharField(
+        max_length=10,
+        choices=[
+            ("image", "Image"),
+            ("video", "Video"),
+            ("pdf", "PDF"),
+            ("ppt", "PowerPoint"),
+            ("doc", "Document"),
+            ("other", "Other"),
+        ],
+        default="other",
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Asset for {self.project.title} ({self.file_type})"
+
+
+class ReflectiveQuiz(models.Model):
+    """
+    Reflective quizzes associated with a ClassroomProject.
+    """
+    project = models.ForeignKey(ClassroomProject, on_delete=models.CASCADE, related_name="quizzes")
+    question = models.TextField()
+    options = models.JSONField(help_text="Store options as a dictionary, e.g. {'1': 'A', '2': 'B', '3': 'C'}")
+    answers = models.JSONField(help_text="Store correct answer indices as a list, e.g. [1, 3]")
+    multiselect = models.BooleanField(default=False, help_text="Whether multiple answers can be selected")
+
+    def __str__(self):
+        return f"Quiz for {self.project.title}: {self.question[:50]}..."
 
 class ProjectSession(models.Model):
     project = models.ForeignKey(ClassroomProject, on_delete=models.CASCADE, related_name="sessions")

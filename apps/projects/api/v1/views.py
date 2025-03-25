@@ -11,23 +11,18 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 User = get_user_model()
 
-class ClassroomProjectViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint for admin to create, update, delete, and list classroom projects.
-    Teacher assignment is automatically handled based on grade and division.
-    """
-    queryset = ClassroomProject.objects.all()
-    parser_classes = [MultiPartParser, FormParser]
-    serializer_class = ClassroomProjectSerializer
-    permission_classes = [IsAdminOrTeacher]  # Replace with [IsSpecificAdmin] if you have that
+class ClassroomProjectCreateAPIView(APIView):
+    parser_classes = (MultiPartParser, FormParser)  # Required for file uploads
+    permission_classes = [IsAdminOrTeacher]
 
-    def destroy(self, request, *args, **kwargs):
-        """
-        Optionally, you can override destroy to provide custom deletion logic.
-        """
-        instance = self.get_object()
-        self.perform_destroy(instance)
-        return Response({"message": "Project deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+    def post(self, request, *args, **kwargs):
+        serializer = ClassroomProjectSerializer(data=request.data)
+
+        if serializer.is_valid():
+            classroom_project = serializer.save()
+            return Response({"message": "Classroom Project created successfully!", "data": serializer.data}, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class CreateProjectSessionView(APIView):
     """
