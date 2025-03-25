@@ -2,46 +2,61 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
-from apps.projects.models.projects import ClassroomProject, ProjectSession, ProjectSubmission
+from apps.accounts.models.user import GroupMaster, TeacherLocationDetails
+from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz
 from apps.projects.utils import get_teacher_for_grade_division
 
 User = get_user_model()
 
+class ProjectAssetSerializer(serializers.ModelSerializer):
+    asset_url = serializers.FileField(required=False)  # Allows file upload
+
+    class Meta:
+        model = ProjectAsset
+        fields = ['id', 'asset_type', 'asset_url', 'uploaded_by']
+
+class ReflectiveQuizSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReflectiveQuiz
+        fields = ['id', 'question', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_option']
+
 class ClassroomProjectSerializer(serializers.ModelSerializer):
-    # assigned_teacher is read-only since it is auto-assigned
-    assigned_teacher = serializers.CharField(read_only=True)
-    
+    assets = ProjectAssetSerializer(many=True, required=False)
+    quizzes = ReflectiveQuizSerializer(many=True, required=False)
+    thumbnail = serializers.FileField(required=False)  # Allows file upload
+
     class Meta:
         model = ClassroomProject
-        fields = [
-            'id',
-            'title',
-            'description',
-            'grade',
-            'division',
-            'assigned_teacher',
-            'thumbnail',
-            'date_created',
-            'date_modified',
-            'due_date',
-        ]
-        read_only_fields = ['assigned_teacher', 'date_created', 'date_modified']
-
+        fields = ['id', 'title', 'description', 'grade', 'division', 'assigned_teacher', 'thumbnail', 'due_date', 'assets', 'quizzes']
+    
     def create(self, validated_data):
-        grade = validated_data.get('grade')
-        division = validated_data.get('division')
-        teacher = get_teacher_for_grade_division(grade, division)
-        validated_data['assigned_teacher'] = teacher
-        return super().create(validated_data)
+        assets_data = validated_data.pop('assets', [])
+        quizzes_data = validated_data.pop('quizzes', [])
 
-    def update(self, instance, validated_data):
-        # If grade or division are updated, re-assign teacher automatically
-        if 'grade' in validated_data or 'division' in validated_data:
-            grade = validated_data.get('grade', instance.grade)
-            division = validated_data.get('division', instance.division)
-            teacher = get_teacher_for_grade_division(grade, division)
-            validated_data['assigned_teacher'] = teacher
-        return super().update(instance, validated_data)
+        # Automatically assign group and teacher
+        group = GroupMaster.objects.filter(grade=validated_data['grade'], division=validated_data['division']).first()
+        if not group:
+            raise serializers.ValidationError("No group found for the given grade and division.")
+
+        assigned_teacher = TeacherLocationDetails.objects.filter(GroupId=group.GroupId).first()
+        if not assigned_teacher:
+            raise serializers.ValidationError("No assigned teacher found for the given group.")
+
+        classroom_project = ClassroomProject.objects.create(
+            **validated_data,
+            group=group,
+            assigned_teacher=assigned_teacher
+        )
+
+        # Handle Asset Uploads
+        for asset in assets_data:
+            ProjectAsset.objects.create(classroom_project=classroom_project, **asset)
+
+        # Handle Quizzes
+        for quiz in quizzes_data:
+            ReflectiveQuiz.objects.create(classroom_project=classroom_project, **quiz)
+
+        return classroom_project
     
 class ProjectSessionSerializer(serializers.ModelSerializer):
     file_type = serializers.ReadOnlyField()  # To include file type in response
