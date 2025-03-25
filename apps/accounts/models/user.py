@@ -264,7 +264,8 @@ class UserGroup(models.Model):
         User,
         on_delete=models.CASCADE,
         db_column='UserId',
-        related_name='user_groups'
+        related_name='user_groups',
+        primary_key=True
     )
     LocationId = models.CharField(max_length=50, db_column='LocationId')
     GroupId = models.CharField(max_length=50, db_column='GroupId')

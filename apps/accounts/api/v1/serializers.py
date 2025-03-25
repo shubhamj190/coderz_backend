@@ -342,8 +342,8 @@ class StudentDetailSerializer(serializers.ModelSerializer):
     PhoneNumber = serializers.CharField(source="user.PhoneNumber", required=False)
     IsActive = serializers.BooleanField(source="user.IsActive", read_only=True)
 
-    # Correct field names to match UserDetails model
-    GradeId = serializers.PrimaryKeyRelatedField(queryset=Grade.objects.all(), required=True)
+    # ✅ Accept `GradeName` as a string instead of PrimaryKey
+    GradeId = serializers.CharField(required=True)  
 
     # ❌ Remove DivisionId from response (only used for input)
     DivisionId = serializers.SerializerMethodField()
@@ -351,68 +351,102 @@ class StudentDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserDetails
         fields = [
-            "UserId",         # Student's primary key
-            "FirstName",      # Updatable user first name
-            "LastName",       # Updatable user last name
-            "Gender",         # Updatable user gender
-            "Email",          # Updatable user email
-            "PhoneNumber",    # Updatable user phone number
+            "UserId",
+            "FirstName",
+            "LastName",
+            "Gender",
+            "Email",
+            "PhoneNumber",
             "date_of_birth",
-            "GradeId",
+            "GradeId",   # ✅ Now a string field instead of PrimaryKey
             "AdmissionNo",
-            "DivisionId",     # Used only for input
-            "IsActive"        # Student's active status
+            "DivisionId",
+            "IsActive"
         ]
-        extra_kwargs = {"DivisionId": {"write_only": True}}  # Ensure it's used only for input
+        extra_kwargs = {"DivisionId": {"write_only": True}}
 
     def get_DivisionId(self, obj):
         """Fetch DivisionId from UserGroup → GroupMaster dynamically."""
         try:
-            # Get the user's group
-            user_group = UserGroup.objects.filter(user=obj.user.UserId).first()
+            user_group = UserGroup.objects.filter(user=obj.user).first()
             if user_group:
                 group_master = user_group.GID  # GroupMaster object
                 if group_master:
-                    # Extract Division from GroupName (assuming format: "GradeName - DivisionName")
                     group_name_parts = group_master.GroupName.split(" - ")
                     if len(group_name_parts) > 1:
                         division_name = group_name_parts[1]
                         division = Division.objects.filter(DivisionName=division_name).first()
                         if division:
-                            return division.DivisionId  # Return DivisionId
-        except Exception as e:
-            return None  # Return None if not found or error occurs
+                            return division.DivisionName
+        except Exception:
+            return None
         return None
 
+    def to_representation(self, instance):
+        """Convert GradeId to GradeName in GET response."""
+        data = super().to_representation(instance)
+        grade = Grade.objects.filter(GradeId=instance.GradeId).first()
+        if grade:
+            data["GradeId"] = grade.GradeName  # ✅ Convert to GradeName
+            print("DATA ", data)
+        return data
+
+    def validate_GradeId(self, value):
+        """Convert GradeName to GradeId for storage."""
+        grade = Grade.objects.filter(GradeName=value).first()
+        if not grade:
+            raise serializers.ValidationError("Invalid Grade Name")
+        return grade.GradeName  # ✅ Convert to GradeId
+
     def update(self, instance, validated_data):
-        # Extract nested user data if provided.
+        """Update only the fields present in the request."""
+
+        # ✅ Fetch all request data to check what was provided
+        request_data = self.initial_data  
+
+        # ✅ Update nested user fields (if present in request)
         user_data = validated_data.pop("user", {})
         user = instance.user
         for attr, value in user_data.items():
-            if attr == "UserName":  # Skip updating username
-                continue
             setattr(user, attr, value)
         user.save()
 
-        # Extract DivisionId (not stored in UserDetails)
-        division = validated_data.pop("DivisionId", None)
+        # ✅ Handle updates dynamically for each field
+        updatable_fields = [
+            "FirstName", "LastName", "Gender", "date_of_birth", "AdmissionNo"
+        ]
+        
+        for field in updatable_fields:
+            if field in request_data:
+                setattr(instance, field, request_data[field])
 
-        # Update Student-specific fields.
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+        # ✅ Handle `GradeId` (convert from name to ID if present)
+        if "GradeId" in request_data:
+            grade_name = request_data["GradeId"]
+            grade = Grade.objects.filter(GradeName=grade_name).first()
+            if not grade:
+                raise serializers.ValidationError({"GradeId": "Invalid Grade Name"})
+            instance.GradeId = grade.GradeId  # Update GradeId in DB
 
-        instance.save()
+        # ✅ Handle `DivisionId` (update UserGroup if present)
+        if "DivisionId" in request_data:
+            division_name = request_data["DivisionId"]
+            grade_name = request_data.get("GradeId", instance.GradeId)
 
-        # ✅ Process Division Logic (if required)
-        if division:
-            group_name = f"{instance.GradeId.GradeName} - {division.DivisionName}"
+            # ✅ Construct the group name
+            group_name = f"{grade_name} - {division_name}"
             group = GroupMaster.objects.filter(GroupName=group_name).first()
-            if group:
-                UserGroup.objects.update_or_create(
-                    user=user,
-                    defaults={"GID": group, "IsDeleted": False}
-                )
 
+            # ✅ Delete existing `UserGroup` entry for this user
+            UserGroup.objects.filter(user=user).delete()
+
+            # ✅ Create a new `UserGroup` entry (if group exists)
+            location = Location.objects.get(LID=2)
+            if group:
+                UserGroup.objects.create(user=user, GID=group, LID=location, GroupId=group.GroupId, IsDeleted=False)
+
+                # ✅ Save updates
+                instance.save()
         return instance
 
 class GradeDivisionMappingSerializer(serializers.ModelSerializer):
