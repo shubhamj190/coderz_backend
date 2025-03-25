@@ -280,6 +280,7 @@ class StudentCreateSerializer(serializers.ModelSerializer):
                 password="student@123",
                 InstitutionId=1
             )
+            gradeid=Grade.objects.get(GradeName=GradeId).GradeId
 
             # Create Student
             student = UserDetails.objects.create(
@@ -288,7 +289,7 @@ class StudentCreateSerializer(serializers.ModelSerializer):
                 LastName=last_name,
                 Gender=gender,
                 date_of_birth=date_of_birth,
-                GradeId=GradeId,  # Now correctly mapped
+                GradeId=gradeid,  # Now correctly mapped
                 AdmissionNo=admission_number,
                 UserType='Learner',
                 IsActive=True,
