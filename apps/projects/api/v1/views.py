@@ -50,7 +50,7 @@ class ProjectAssetCreateView(CreateAPIView):
 
         asset_files = request.FILES.getlist('asset_files')  # Get multiple files
         file_types_raw = request.POST.get('file_types') # Get file types as a list
-        
+
         # Ensure `file_types_raw` is valid JSON and parse it
         try:
             file_types = json.loads(file_types_raw) if file_types_raw else []
@@ -78,7 +78,7 @@ class RetrieveUpdateProjectAssetsView(RetrieveUpdateAPIView):
     def get(self, request, *args, **kwargs):
         """Retrieve all assets for a Classroom Project"""
         project = self.get_object()
-        assets = project.projectasset_set.all()
+        assets = project.assets.all()
         serializer = ProjectAssetSerializer(assets, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 

@@ -1,4 +1,5 @@
 # apps/accounts/api/v1/serializers.py
+import json
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
@@ -6,6 +7,8 @@ from apps.accounts.models.grades import Division, Grade
 from apps.accounts.models.user import GroupMaster, TeacherLocationDetails
 from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz
 from apps.projects.utils import get_teacher_for_grade_division
+from rest_framework import viewsets, status
+from rest_framework.response import Response
 
 User = get_user_model()
 
@@ -26,26 +29,36 @@ class UpdateProjectAssetsSerializer(serializers.Serializer):
     asset_files = serializers.ListField(child=serializers.FileField(), required=False)
 
     def update(self, instance, validated_data):
-        request = self.context.get("request")
-        asset_files = request.FILES.getlist("asset_files", [])
-        assets_data = validated_data.get("assets", [])
+            request = self.context.get("request")
+            asset_files = request.FILES.getlist("asset_files", [])  # Uploaded files
+            file_types_raw = request.POST.get('file_types')  # Get file types as a JSON string
 
-        # Validate assets and files count
-        if len(assets_data) != len(asset_files):
-            raise serializers.ValidationError({"assets": "Mismatch between assets data and uploaded files."})
+            # Ensure `file_types_raw` is valid JSON and parse it
+            try:
+                file_types = json.loads(file_types_raw) if file_types_raw else []
+            except json.JSONDecodeError:
+                return Response({"error": "Invalid file_types format"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Delete old assets
-        instance.projectasset_set.all().delete()
+            # Ensure assets and files match
+            if len(file_types) != len(asset_files):
+                raise serializers.ValidationError(
+                    {"assets": "Mismatch between assets data and uploaded files."}
+                )
 
-        # Create new assets
-        for asset_data, file in zip(assets_data, asset_files):
-            ProjectAsset.objects.create(
-                project=instance,
-                file=file,
-                file_type=asset_data.get("file_type", "other")
-            )
+            # **Delete old assets before updating**
+            instance.assets.all().delete()
 
-        return instance
+            # **Create new assets**
+            new_assets = []
+            for file_type, file in zip(file_types, asset_files):
+                new_asset = ProjectAsset.objects.create(
+                    project=instance,
+                    file=file,
+                    file_type=file_type  # Directly using file_type since it's a string
+                )
+                new_assets.append(new_asset)
+
+            return instance
 
 
 class ReflectiveQuizSerializer(serializers.ModelSerializer):
