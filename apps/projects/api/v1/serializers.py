@@ -107,6 +107,13 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
 
         return classroom_project
     
+class TeacherClassroomProjectSerializer(serializers.ModelSerializer):
+    assets = ProjectAssetSerializer(many=True, read_only=True)
+    quizzes = ReflectiveQuizSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ClassroomProject
+        fields = ["id", "title", "description", "assets", "quizzes"]
 class ProjectSessionSerializer(serializers.ModelSerializer):
     file_type = serializers.ReadOnlyField()  # To include file type in response
 

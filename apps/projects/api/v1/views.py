@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer, UpdateProjectAssetsSerializer
+from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer, TeacherClassroomProjectSerializer, UpdateProjectAssetsSerializer
 from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ReflectiveQuiz
 from core.permissions.role_based import IsAdminOrTeacher, IsSpecificStudent, IsSpecificAdmin, IsSpecificTeacher
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -257,7 +257,11 @@ class TeacherProjectsView(APIView):
         teacher = request.user  # Assuming `request.user` is a Teacher
 
         # Retrieve all projects assigned to the logged-in teacher
-        projects = ClassroomProject.objects.filter(assigned_teacher=teacher)
+        projects = (
+            ClassroomProject.objects
+            .filter(assigned_teacher=teacher)
+            .prefetch_related("assets", "quizzes")
+        )
 
-        serializer = ClassroomProjectSerializer(projects, many=True)
+        serializer = TeacherClassroomProjectSerializer(projects, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
