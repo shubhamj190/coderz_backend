@@ -51,6 +51,8 @@ class ProjectAsset(models.Model):
 
     def __str__(self):
         return f"Asset for {self.project.title} ({self.file_type})"
+    class Meta:
+        db_table = "ProjectAsset"
 
 
 class ReflectiveQuiz(models.Model):

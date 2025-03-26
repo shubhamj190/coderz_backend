@@ -10,18 +10,42 @@ from apps.projects.utils import get_teacher_for_grade_division
 User = get_user_model()
 
 class ProjectAssetSerializer(serializers.ModelSerializer):
-    file = serializers.FileField()  # Ensure file is properly handled
+    file_url = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectAsset
-        fields = ['id', 'file', 'file_type']
+        fields = ["id", "file_url", "file_type"]
 
-    def create(self, validated_data):
-        """
-        Create ProjectAsset instance and return it.
-        """
-        return ProjectAsset.objects.create(**validated_data)
-    
+    def get_file_url(self, obj):
+        if obj.file:
+            return obj.file.url
+        return None
+
+class UpdateProjectAssetsSerializer(serializers.Serializer):
+    assets = serializers.ListField(child=serializers.JSONField(), required=False)
+    asset_files = serializers.ListField(child=serializers.FileField(), required=False)
+
+    def update(self, instance, validated_data):
+        request = self.context.get("request")
+        asset_files = request.FILES.getlist("asset_files", [])
+        assets_data = validated_data.get("assets", [])
+
+        # Validate assets and files count
+        if len(assets_data) != len(asset_files):
+            raise serializers.ValidationError({"assets": "Mismatch between assets data and uploaded files."})
+
+        # Delete old assets
+        instance.projectasset_set.all().delete()
+
+        # Create new assets
+        for asset_data, file in zip(assets_data, asset_files):
+            ProjectAsset.objects.create(
+                project=instance,
+                file=file,
+                file_type=asset_data.get("file_type", "other")
+            )
+
+        return instance
 
 
 class ReflectiveQuizSerializer(serializers.ModelSerializer):

@@ -1,11 +1,12 @@
 # apps/accounts/api/v1/views.py
+import json
 from django.shortcuts import get_object_or_404
 from rest_framework.generics import CreateAPIView, UpdateAPIView,RetrieveUpdateAPIView, ListAPIView
 from rest_framework.views import APIView
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer
+from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer, UpdateProjectAssetsSerializer
 from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ReflectiveQuiz
 from core.permissions.role_based import IsAdminOrTeacher, IsSpecificStudent, IsSpecificAdmin
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -17,31 +18,6 @@ class ClassroomProjectCreateView(CreateAPIView):
     queryset = ClassroomProject.objects.all()
     serializer_class = ClassroomProjectSerializer
     permission_classes = [IsSpecificAdmin]  # Optional: Require authentication
-    
-class ProjectAssetCreateView(CreateAPIView):
-    serializer_class = ProjectAssetSerializer
-
-    def post(self, request, project_id, *args, **kwargs):
-        """
-        Upload multiple assets for a given ClassroomProject.
-        """
-        try:
-            project = ClassroomProject.objects.get(id=project_id)
-        except ClassroomProject.DoesNotExist:
-            return Response({"error": "Project not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        asset_files = request.FILES.getlist('files')  # Get multiple files
-        file_types = request.data.getlist('file_types')  # Get corresponding file types
-
-        if len(asset_files) != len(file_types):
-            return Response({"error": "Mismatch between files and file types"}, status=status.HTTP_400_BAD_REQUEST)
-
-        assets = []
-        for file, file_type in zip(asset_files, file_types):
-            asset = ProjectAsset.objects.create(project=project, file=file, file_type=file_type)
-            assets.append(ProjectAssetSerializer(asset).data)
-
-        return Response(assets, status=status.HTTP_201_CREATED)
     
 class ClassroomProjectListView(ListAPIView):
     queryset = ClassroomProject.objects.all()
@@ -62,7 +38,59 @@ class ClassroomProjectRetrieveUpdateView(RetrieveUpdateAPIView):
         """
         project_id = self.kwargs.get("pk")
         return ClassroomProject.objects.get(id=project_id)
+
+class ProjectAssetCreateView(CreateAPIView):
+    serializer_class = ProjectAssetSerializer
+
+    def post(self, request, project_id, *args, **kwargs):
+        try:
+            project = ClassroomProject.objects.get(id=project_id)
+        except ClassroomProject.DoesNotExist:
+            return Response({"error": "Project not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        asset_files = request.FILES.getlist('asset_files')  # Get multiple files
+        file_types_raw = request.POST.get('file_types') # Get file types as a list
+        
+        # Ensure `file_types_raw` is valid JSON and parse it
+        try:
+            file_types = json.loads(file_types_raw) if file_types_raw else []
+        except json.JSONDecodeError:
+            return Response({"error": "Invalid file_types format"}, status=status.HTTP_400_BAD_REQUEST)
+        if len(asset_files) != len(file_types):
+            return Response({"error": "Mismatch between files and file types"}, status=status.HTTP_400_BAD_REQUEST)
+
+        assets = []
+        for file, file_type in zip(asset_files, file_types):
+            asset = ProjectAsset.objects.create(
+                project=project,
+                file=file,
+                file_type=file_type.strip()  # Ensure no unwanted characters
+            )
+            assets.append(ProjectAssetSerializer(asset).data)
+
+        return Response(assets, status=status.HTTP_201_CREATED)
     
+class RetrieveUpdateProjectAssetsView(RetrieveUpdateAPIView):
+    queryset = ClassroomProject.objects.all()
+    serializer_class = UpdateProjectAssetsSerializer
+    lookup_field = "pk"
+
+    def get(self, request, *args, **kwargs):
+        """Retrieve all assets for a Classroom Project"""
+        project = self.get_object()
+        assets = project.projectasset_set.all()
+        serializer = ProjectAssetSerializer(assets, many=True, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        """Update assets for a Classroom Project"""
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True, context={"request": request})
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Project assets updated successfully"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 class ReflectiveQuizCreateView(CreateAPIView):
     serializer_class = ReflectiveQuizSerializer
 
