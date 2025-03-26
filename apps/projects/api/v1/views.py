@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer, UpdateProjectAssetsSerializer
 from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ReflectiveQuiz
-from core.permissions.role_based import IsAdminOrTeacher, IsSpecificStudent, IsSpecificAdmin
+from core.permissions.role_based import IsAdminOrTeacher, IsSpecificStudent, IsSpecificAdmin, IsSpecificTeacher
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
@@ -249,3 +249,15 @@ class ProjectSubmissionCreateView(APIView):
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class TeacherProjectsView(APIView):
+    permission_classes = [IsSpecificTeacher]  # Ensure only logged-in users can access
+
+    def get(self, request, *args, **kwargs):
+        teacher = request.user  # Assuming `request.user` is a Teacher
+
+        # Retrieve all projects assigned to the logged-in teacher
+        projects = ClassroomProject.objects.filter(assigned_teacher=teacher)
+
+        serializer = ClassroomProjectSerializer(projects, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
