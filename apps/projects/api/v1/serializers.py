@@ -106,14 +106,31 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
         )
 
         return classroom_project
-    
+
+class StudentAndTeacherProjectAssetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectAsset
+        fields = ["id", "file", "file_type", "uploaded_at"]
+class StudentAndTeacherReflectiveQuizSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReflectiveQuiz
+        fields = ["id", "question", "options", "multiselect"]
 class TeacherClassroomProjectSerializer(serializers.ModelSerializer):
-    assets = ProjectAssetSerializer(many=True, read_only=True)
-    quizzes = ReflectiveQuizSerializer(many=True, read_only=True)
+    assets = StudentAndTeacherProjectAssetSerializer(many=True, read_only=True)
+    quizzes = StudentAndTeacherReflectiveQuizSerializer(many=True, read_only=True)
 
     class Meta:
         model = ClassroomProject
         fields = ["id", "title", "description", "assets", "quizzes"]
+
+class StudentClassroomProjectSerializer(serializers.ModelSerializer):
+    assets = StudentAndTeacherProjectAssetSerializer(many=True, read_only=True)
+    quizzes = StudentAndTeacherReflectiveQuizSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ClassroomProject
+        fields = ["id", "title", "description", "assets", "quizzes"]
+
 class ProjectSessionSerializer(serializers.ModelSerializer):
     file_type = serializers.ReadOnlyField()  # To include file type in response
 

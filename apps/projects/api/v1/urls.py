@@ -11,6 +11,7 @@ from apps.projects.api.v1.views import (
     ProjectSubmissionCreateView,
     ReflectiveQuizRetrieveUpdateAPIView,
     RetrieveUpdateProjectAssetsView,
+    StudentProjectsView,
     TeacherProjectsView,
     UpdateProjectSessionView
     )
@@ -32,4 +33,5 @@ urlpatterns = [
     path("project-submission/", ProjectSubmissionCreateView.as_view(), name="project_submission"),
 
     path("teacher/projects/", TeacherProjectsView.as_view(), name="teacher-projects"),
+    path("student/projects/", StudentProjectsView.as_view(), name="teacher-projects"),
 ]
