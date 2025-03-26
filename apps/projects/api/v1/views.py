@@ -12,6 +12,8 @@ from core.permissions.role_based import IsAdminOrTeacher, IsSpecificStudent, IsS
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import generics
+
 User = get_user_model()
 
 class ClassroomProjectCreateView(CreateAPIView):
@@ -114,6 +116,14 @@ class ReflectiveQuizCreateView(CreateAPIView):
             quizzes.append(ReflectiveQuizSerializer(quiz).data)
 
         return Response(quizzes, status=status.HTTP_201_CREATED)
+    
+class ReflectiveQuizRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
+    """
+    Retrieve and update a Reflective Quiz instance.
+    """
+    queryset = ReflectiveQuiz.objects.all()
+    serializer_class = ReflectiveQuizSerializer
+    lookup_field = "id"  # The field used for retrieving the quiz
 
 class CreateProjectSessionView(APIView):
     """

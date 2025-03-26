@@ -67,6 +67,10 @@ class ReflectiveQuiz(models.Model):
 
     def __str__(self):
         return f"Quiz for {self.project.title}: {self.question[:50]}..."
+    
+    class Meta:
+        db_table = 'ReflectiveQuiz'
+        managed = False
 
 class ProjectSession(models.Model):
     project = models.ForeignKey(ClassroomProject, on_delete=models.CASCADE, related_name="sessions")
