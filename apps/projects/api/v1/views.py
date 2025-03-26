@@ -1,13 +1,13 @@
 # apps/accounts/api/v1/views.py
 from django.shortcuts import get_object_or_404
-from rest_framework.generics import CreateAPIView
+from rest_framework.generics import CreateAPIView, UpdateAPIView,RetrieveUpdateAPIView
 from rest_framework.views import APIView
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer
 from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ReflectiveQuiz
-from core.permissions.role_based import IsAdminOrTeacher, IsSpecificStudent
+from core.permissions.role_based import IsAdminOrTeacher, IsSpecificStudent, IsSpecificAdmin
 from rest_framework.parsers import MultiPartParser, FormParser
 
 User = get_user_model()
@@ -15,6 +15,7 @@ User = get_user_model()
 class ClassroomProjectCreateView(CreateAPIView):
     queryset = ClassroomProject.objects.all()
     serializer_class = ClassroomProjectSerializer
+    permission_classes = [IsSpecificAdmin]  # Optional: Require authentication
     
 class ProjectAssetCreateView(CreateAPIView):
     serializer_class = ProjectAssetSerializer
@@ -40,6 +41,19 @@ class ProjectAssetCreateView(CreateAPIView):
             assets.append(ProjectAssetSerializer(asset).data)
 
         return Response(assets, status=status.HTTP_201_CREATED)
+    
+class ClassroomProjectRetrieveUpdateView(RetrieveUpdateAPIView):
+    queryset = ClassroomProject.objects.all()
+    serializer_class = ClassroomProjectSerializer
+    parser_classes = (MultiPartParser, FormParser)  # Supports file uploads
+    permission_classes = [IsSpecificAdmin]  # Optional authentication
+
+    def get_object(self):
+        """
+        Fetch the ClassroomProject object based on the provided `pk`
+        """
+        project_id = self.kwargs.get("pk")
+        return ClassroomProject.objects.get(id=project_id)
     
 class ReflectiveQuizCreateView(CreateAPIView):
     serializer_class = ReflectiveQuizSerializer
