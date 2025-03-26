@@ -1,6 +1,6 @@
 # apps/accounts/api/v1/views.py
 from django.shortcuts import get_object_or_404
-from rest_framework.generics import CreateAPIView, UpdateAPIView,RetrieveUpdateAPIView
+from rest_framework.generics import CreateAPIView, UpdateAPIView,RetrieveUpdateAPIView, ListAPIView
 from rest_framework.views import APIView
 from rest_framework import viewsets, status
 from rest_framework.response import Response
@@ -9,7 +9,8 @@ from apps.projects.api.v1.serializers import ClassroomProjectSerializer, Project
 from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ReflectiveQuiz
 from core.permissions.role_based import IsAdminOrTeacher, IsSpecificStudent, IsSpecificAdmin
 from rest_framework.parsers import MultiPartParser, FormParser
-
+from rest_framework.filters import OrderingFilter
+from django_filters.rest_framework import DjangoFilterBackend
 User = get_user_model()
 
 class ClassroomProjectCreateView(CreateAPIView):
@@ -41,6 +42,13 @@ class ProjectAssetCreateView(CreateAPIView):
             assets.append(ProjectAssetSerializer(asset).data)
 
         return Response(assets, status=status.HTTP_201_CREATED)
+    
+class ClassroomProjectListView(ListAPIView):
+    queryset = ClassroomProject.objects.all()
+    serializer_class = ClassroomProjectSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ["grade", "division"]  # Filters for grade and division
+    ordering_fields = ["due_date", "title"]  # Allow ordering by due_date & title
     
 class ClassroomProjectRetrieveUpdateView(RetrieveUpdateAPIView):
     queryset = ClassroomProject.objects.all()
