@@ -6,10 +6,10 @@ from rest_framework.views import APIView
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from apps.accounts.models.user import UserGroup
+from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserGroup
 from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer, StudentClassroomProjectSerializer, TeacherClassroomProjectSerializer, UpdateProjectAssetsSerializer
-from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ReflectiveQuiz
-from core.permissions.role_based import IsAdminOrTeacher, IsSpecificStudent, IsSpecificAdmin, IsSpecificTeacher
+from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz
+from core.permissions.role_based import IsAdminOrTeacher, IsAdminTeacherStudent, IsSpecificStudent, IsSpecificAdmin, IsSpecificTeacher
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
@@ -251,6 +251,36 @@ class ProjectSubmissionCreateView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+class ProjectSubmissionListView(APIView):
+    permission_classes = [IsAdminTeacherStudent]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        user_type = user.details.UserType  # Assuming user_type is stored in UserDetails model
+
+        # **Admin: Fetch all submissions**
+        if user_type == "Admin":
+            submissions = ProjectSubmission.objects.all()
+
+        # **Teacher: Fetch submissions for projects linked to teacher's group**
+        elif user_type == "Teacher":
+            group_teacher = TeacherLocationDetails.objects.filter(UserId=user.UserId).values_list('GID_id', flat=True)
+            projects = ClassroomProject.objects.filter(group__GID__in=[group_teacher])
+            submissions = ProjectSubmission.objects.filter(project__in=projects)
+
+        # **Student: Fetch only the logged-in student's submissions**
+        elif user_type == "Learner":
+            submissions = ProjectSubmission.objects.filter(student=user.details)
+
+        else:
+            return Response(
+                {"error": "Unauthorized user type."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = ProjectSubmissionSerializer(submissions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 class TeacherProjectsView(APIView):
     permission_classes = [IsSpecificTeacher]  # Ensure only logged-in users can access
 

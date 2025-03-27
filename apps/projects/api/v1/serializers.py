@@ -141,5 +141,5 @@ class ProjectSessionSerializer(serializers.ModelSerializer):
 class ProjectSubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectSubmission
-        fields = ["id", "project", "student", "submission_file", "submitted_at", "feedback", "marks_obtained"]
-        read_only_fields = ["submitted_at", "feedback", "marks_obtained"]
+        fields = ["id", "project", "student", "submission_file", "submitted_at"]
+        read_only_fields = ["submitted_at"]

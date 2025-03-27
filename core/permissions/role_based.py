@@ -27,3 +27,12 @@ class IsAdminOrTeacher(BasePermission):
             "Admin",
             "Teacher",
         ]
+
+class IsAdminTeacherStudent(BasePermission):
+
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role in [
+            "Admin",
+            "Teacher",
+            "Learner",
+        ]
