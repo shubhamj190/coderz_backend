@@ -164,4 +164,13 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = ["*"]
 
-CORS_ALLOWED_ORIGINS = ['*']
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://yourfrontend.com",
+    "https://206.189.128.223:5173",
+    "http://206.189.128.223:5173",
+    "https://coding1.questplus.in"
+    "http://coding1.questplus.in"
+
+]
