@@ -185,7 +185,7 @@ class ProjectSessionListView(APIView):
     API to get all project sessions or filter by project ID.
     Only Admins and Teachers can access.
     """
-    permission_classes = [IsAdminOrTeacher]
+    permission_classes = [IsAdminTeacherStudent]
 
     def get(self, request, *args, **kwargs):
         """
