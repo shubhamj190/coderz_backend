@@ -170,7 +170,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://yourfrontend.com",
     "https://206.189.128.223:5173",
     "http://206.189.128.223:5173",
-    "https://coding1.questplus.in"
-    "http://coding1.questplus.in"
+    "https://coding1.questplus.in",
+    "http://coding1.questplus.in",
 
 ]
