@@ -297,6 +297,38 @@ class TeacherProjectsView(APIView):
         serializer = TeacherClassroomProjectSerializer(projects, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+class TeacherProjectDetailView(APIView):
+    permission_classes = [IsSpecificTeacher]
+
+    def get(self, request, project_id, *args, **kwargs):
+        teacher = request.user  # Assuming `request.user` is a Teacher
+
+        try:
+            # Fetch project assigned to this teacher
+            project = (
+                ClassroomProject.objects
+                .filter(id=project_id, assigned_teacher=teacher)
+                .prefetch_related("assets", "quizzes")
+                .first()
+            )
+
+            # Check if the project exists and is assigned to the teacher
+            if not project:
+                return Response(
+                    {"error": "Project not found or you are not authorized to view it."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Serialize project
+            serializer = TeacherClassroomProjectSerializer(project)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except ClassroomProject.DoesNotExist:
+            return Response(
+                {"error": "Project not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
 class StudentProjectsView(APIView):
     permission_classes = [IsSpecificStudent]  # Ensure only authenticated students can access
 
@@ -317,3 +349,43 @@ class StudentProjectsView(APIView):
 
         serializer = StudentClassroomProjectSerializer(projects, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class StudentProjectDetailView(APIView):
+    permission_classes = [IsSpecificStudent]
+
+    def get(self, request, project_id, *args, **kwargs):
+        student = request.user  # Assuming `request.user` is a Student
+
+        # Check if the student belongs to any group
+        student_groups = UserGroup.objects.filter(user=student).values_list('GroupId', flat=True)
+        if not student_groups.exists():
+            return Response(
+                {"error": "No groups assigned to this student."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            # Retrieve the project only if it belongs to the student's group
+            project = (
+                ClassroomProject.objects
+                .filter(id=project_id, group__GroupId__in=student_groups)  # Assuming ClassroomProject has a 'group' field
+                .prefetch_related("assets", "quizzes")
+                .first()
+            )
+
+            # Check if the project is accessible to the student
+            if not project:
+                return Response(
+                    {"error": "Project not found or not accessible to this student."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Serialize the project
+            serializer = StudentClassroomProjectSerializer(project)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except ClassroomProject.DoesNotExist:
+            return Response(
+                {"error": "Project not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
