@@ -129,7 +129,7 @@ class StudentClassroomProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ClassroomProject
-        fields = ["id", "title", "description", "assets", "quizzes", "grade", "division", "due_date"]
+        fields = ["id", "title", "description", "assets", "quizzes", "grade", "division", "due_date", "thumbnail"]
 
 class ProjectSessionSerializer(serializers.ModelSerializer):
     file_type = serializers.ReadOnlyField()  # To include file type in response
@@ -141,5 +141,5 @@ class ProjectSessionSerializer(serializers.ModelSerializer):
 class ProjectSubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectSubmission
-        fields = ["id", "project", "student", "submission_file", "submitted_at"]
+        fields = ["id", "project", "student", "submission_file", "submitted_at", "feedback"]
         read_only_fields = ["submitted_at"]

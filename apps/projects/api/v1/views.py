@@ -239,6 +239,7 @@ class ProjectSubmissionCreateView(APIView):
             "project": project.id,
             "student": student.id,
             "submission_file": request.FILES.get("submission_file"),
+            "feedback": request.data.get("feedback"),
         }
         serializer = ProjectSubmissionSerializer(data=data)
 
