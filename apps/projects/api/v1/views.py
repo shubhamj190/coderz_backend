@@ -343,12 +343,28 @@ class StudentProjectsView(APIView):
         # Fetch projects associated with the student's groups
         projects = (
             ClassroomProject.objects
-            .filter(group__GroupId__in=student_groups)  # Assuming `group` is the ForeignKey in ClassroomProject
-            .prefetch_related("assets", "quizzes")  # Optimize queries
+            .filter(group__GroupId__in=student_groups)
+            .prefetch_related("assets", "quizzes")
         )
 
-        serializer = StudentClassroomProjectSerializer(projects, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        project_data = []
+        for project in projects:
+            # Check if all quizzes in the project have been correctly answered
+            total_quizzes = project.quizzes.count()
+            completed_submissions = ReflectiveQuizSubmission.objects.filter(
+                student=student,
+                quiz__in=project.quizzes.all(),
+                is_correct=True
+            ).count()
+
+            # Project status: Completed if all quizzes are correctly answered
+            is_completed = completed_submissions == total_quizzes
+
+            project_info = StudentClassroomProjectSerializer(project).data
+            project_info['is_completed'] = is_completed
+            project_data.append(project_info)
+
+        return Response(project_data, status=status.HTTP_200_OK)
     
 class StudentProjectDetailView(APIView):
     permission_classes = [IsSpecificStudent]
@@ -364,32 +380,34 @@ class StudentProjectDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        try:
-            # Retrieve the project only if it belongs to the student's group
-            project = (
-                ClassroomProject.objects
-                .filter(id=project_id, group__GroupId__in=student_groups)  # Assuming ClassroomProject has a 'group' field
-                .prefetch_related("assets", "quizzes")
-                .first()
-            )
+        # Retrieve the project only if it belongs to the student's group
+        project = (
+            ClassroomProject.objects
+            .filter(id=project_id, group__GroupId__in=student_groups)
+            .prefetch_related("assets", "quizzes")
+            .first()
+        )
 
-            # Check if the project is accessible to the student
-            if not project:
-                return Response(
-                    {"error": "Project not found or not accessible to this student."},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-
-            # Serialize the project
-            serializer = StudentClassroomProjectSerializer(project)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        except ClassroomProject.DoesNotExist:
+        if not project:
             return Response(
-                {"error": "Project not found."},
+                {"error": "Project not found or not accessible to this student."},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
+
+        # Check completion status
+        total_quizzes = project.quizzes.count()
+        completed_submissions = ReflectiveQuizSubmission.objects.filter(
+            student=student,
+            quiz__in=project.quizzes.all(),
+            is_correct=True
+        ).count()
+
+        is_completed = completed_submissions == total_quizzes
+
+        project_info = StudentClassroomProjectSerializer(project).data
+        project_info['is_completed'] = is_completed
+
+        return Response(project_info, status=status.HTTP_200_OK)        
 
 class ReflectiveQuizSubmissionView(APIView):
     permission_classes = [IsSpecificStudent]
