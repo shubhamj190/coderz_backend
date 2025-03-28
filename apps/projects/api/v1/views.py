@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserGroup
+from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserDetails, UserGroup
 from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer, StudentClassroomProjectSerializer, TeacherClassroomProjectSerializer, UpdateProjectAssetsSerializer
 from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz, ReflectiveQuizSubmission
 from core.permissions.role_based import IsAdminOrTeacher, IsAdminTeacherStudent, IsSpecificStudent, IsSpecificAdmin, IsSpecificTeacher
@@ -444,3 +444,21 @@ class ReflectiveQuizSubmissionView(APIView):
             {"feedback": feedback},
             status=status.HTTP_200_OK
         )
+
+class ReflectiveQuizCompletionCountView(APIView):
+    permission_classes = [IsSpecificStudent]  # Ensure user is authenticated
+
+    def get(self, request, *args, **kwargs):
+        student = request.user  # Logged-in student
+        # Get the count of completed reflective quizzes
+        completed_count = ReflectiveQuizSubmission.objects.filter(
+            student=student,
+            is_correct=True
+        ).count()
+
+        response_data = {
+            "student_id": str(student.id),
+            "completed_quizzes_count": completed_count
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
