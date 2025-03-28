@@ -34,7 +34,6 @@ class DivisionSerializer(serializers.ModelSerializer):
 class TeacherCreateSerializer(serializers.ModelSerializer):
     # Fields for creating the related User record
     email = serializers.EmailField(write_only=True)
-    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
     first_name = serializers.CharField(write_only=True)
     last_name = serializers.CharField(write_only=True)
     gender = serializers.ChoiceField(choices=UserDetails.GENDER_CHOICES, write_only=True)
@@ -48,7 +47,7 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserDetails
         fields = [
-            "email", "password", "first_name", "last_name", "gender", 
+            "email", "first_name", "last_name", "gender", 
             "contact", "alternative_contact",
             "is_active","grade_division_mapping"
         ]
@@ -56,7 +55,6 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         try:
             email = validated_data.pop("email")
-            password = validated_data.pop("password")
             first_name = validated_data.pop("first_name")
             last_name = validated_data.pop("last_name")
             gender = validated_data.pop("gender")
@@ -74,7 +72,7 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
                 user = User.objects.create_user(
                     UserName=None,  # auto-generated
                     Email=email,
-                    password=password,
+                    password="teacher@123",
                     InstitutionId=1
                 )
 
