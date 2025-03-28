@@ -128,3 +128,27 @@ class ProjectSubmission(models.Model):
     class Meta:
         db_table = 'ProjectSubmission'
         managed = False
+
+class ReflectiveQuizSubmission(models.Model):
+    student = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE,
+        related_name="quiz_submissions",
+        db_column="StudentId"
+    )
+    quiz = models.ForeignKey(
+        ReflectiveQuiz, 
+        on_delete=models.CASCADE,
+        related_name="submissions",
+        db_column="QuizId"
+    )
+    selected_option = models.IntegerField(db_column="SelectedOption")
+    is_correct = models.BooleanField(db_column="IsCorrect")
+    submitted_at = models.DateTimeField(auto_now_add=True, db_column="SubmittedAt")
+
+    def __str__(self):
+        return f"{self.student.FirstName} {self.student.LastName} - Quiz {self.quiz.id}"
+
+    class Meta:
+        db_table = 'ReflectiveQuizSubmission'
+        managed = True

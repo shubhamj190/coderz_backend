@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserGroup
 from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer, StudentClassroomProjectSerializer, TeacherClassroomProjectSerializer, UpdateProjectAssetsSerializer
-from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz
+from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz, ReflectiveQuizSubmission
 from core.permissions.role_based import IsAdminOrTeacher, IsAdminTeacherStudent, IsSpecificStudent, IsSpecificAdmin, IsSpecificTeacher
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.filters import OrderingFilter
@@ -389,3 +389,58 @@ class StudentProjectDetailView(APIView):
                 {"error": "Project not found."},
                 status=status.HTTP_404_NOT_FOUND
             )
+        
+
+class ReflectiveQuizSubmissionView(APIView):
+    permission_classes = [IsSpecificStudent]
+
+    def post(self, request, *args, **kwargs):
+        student = request.user  # Assuming request.user is a student
+        data = request.data.get("submissions", [])
+
+        if not data:
+            return Response(
+                {"error": "No submissions provided."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        feedback = []
+        for submission in data:
+            quiz_id = submission.get("quiz_id")
+            selected_option = submission.get("selected_option")
+
+            try:
+                # Fetch the quiz
+                quiz = ReflectiveQuiz.objects.get(id=quiz_id)
+
+                # Check if the selected option is correct
+                correct_answers = quiz.answers  # Assuming it's a list like [2]
+                is_correct = selected_option in correct_answers
+
+                # Save submission
+                ReflectiveQuizSubmission.objects.create(
+                    student=student,
+                    quiz=quiz,
+                    selected_option=selected_option,
+                    is_correct=is_correct
+                )
+
+                # Prepare feedback
+                feedback.append({
+                    "quiz_id": quiz_id,
+                    "question": quiz.question,
+                    "selected_option": selected_option,
+                    "is_correct": is_correct,
+                    "correct_answers": correct_answers
+                })
+
+            except ReflectiveQuiz.DoesNotExist:
+                feedback.append({
+                    "quiz_id": quiz_id,
+                    "error": "Quiz not found."
+                })
+
+        return Response(
+            {"feedback": feedback},
+            status=status.HTTP_200_OK
+        )
