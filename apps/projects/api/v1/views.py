@@ -426,29 +426,32 @@ class ReflectiveQuizSubmissionView(APIView):
         feedback = []
         for submission in data:
             quiz_id = submission.get("quiz_id")
-            selected_option = submission.get("selected_option")
+            selected_options = submission.get("selected_options", [])  # Expecting a list for multiple selections
 
             try:
                 # Fetch the quiz
                 quiz = ReflectiveQuiz.objects.get(id=quiz_id)
 
-                # Check if the selected option is correct
-                correct_answers = quiz.answers  # Assuming it's a list like [2]
-                is_correct = selected_option in correct_answers
+                # Assuming quiz.answers is a list of correct options, e.g., [2, 3]
+                correct_answers = quiz.answers
 
-                # Save submission
-                ReflectiveQuizSubmission.objects.create(
-                    student=student,
-                    quiz=quiz,
-                    selected_option=selected_option,
-                    is_correct=is_correct
-                )
+                # Check if selected options contain any correct answer
+                is_correct = any(option in correct_answers for option in selected_options)
+
+                # Save each selected option as a submission
+                for option in selected_options:
+                    ReflectiveQuizSubmission.objects.create(
+                        student=student,
+                        quiz=quiz,
+                        selected_option=option,
+                        is_correct=option in correct_answers
+                    )
 
                 # Prepare feedback
                 feedback.append({
                     "quiz_id": quiz_id,
                     "question": quiz.question,
-                    "selected_option": selected_option,
+                    "selected_options": selected_options,
                     "is_correct": is_correct,
                     "correct_answers": correct_answers
                 })
