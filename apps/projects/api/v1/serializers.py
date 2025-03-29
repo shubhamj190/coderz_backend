@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 
 from apps.accounts.models.grades import Division, Grade
 from apps.accounts.models.user import GroupMaster, TeacherLocationDetails
-from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz
+from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz, ReflectiveQuizSubmission
 from apps.projects.utils import get_teacher_for_grade_division
 from rest_framework import viewsets, status
 from rest_framework.response import Response
@@ -123,13 +123,19 @@ class TeacherClassroomProjectSerializer(serializers.ModelSerializer):
         model = ClassroomProject
         fields = ["id", "title", "description", "assets", "quizzes"]
 
+class ReflectiveQuizSubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReflectiveQuizSubmission
+        fields = '__all__'
+
 class StudentClassroomProjectSerializer(serializers.ModelSerializer):
     assets = StudentAndTeacherProjectAssetSerializer(many=True, read_only=True)
     quizzes = StudentAndTeacherReflectiveQuizSerializer(many=True, read_only=True)
+    submitted_quizzes = ReflectiveQuizSubmissionSerializer(many=True, read_only=True)
 
     class Meta:
         model = ClassroomProject
-        fields = ["id", "title", "description", "assets", "quizzes", "grade", "division", "due_date", "thumbnail"]
+        fields = ["id", "title", "description", "assets", "quizzes", "grade", "division", "due_date", "thumbnail",'submitted_quizzes']
 
 class ProjectSessionSerializer(serializers.ModelSerializer):
     file_type = serializers.ReadOnlyField()  # To include file type in response

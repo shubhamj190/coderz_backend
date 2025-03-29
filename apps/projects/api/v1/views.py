@@ -7,7 +7,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserDetails, UserGroup
-from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer, StudentClassroomProjectSerializer, TeacherClassroomProjectSerializer, UpdateProjectAssetsSerializer
+from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer, ReflectiveQuizSubmissionSerializer, StudentClassroomProjectSerializer, TeacherClassroomProjectSerializer, UpdateProjectAssetsSerializer
 from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz, ReflectiveQuizSubmission
 from core.permissions.role_based import IsAdminOrTeacher, IsAdminTeacherStudent, IsSpecificStudent, IsSpecificAdmin, IsSpecificTeacher
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -350,19 +350,23 @@ class StudentProjectsView(APIView):
 
         project_data = []
         for project in projects:
-            # Check if all quizzes in the project have been correctly answered
-            total_quizzes = project.quizzes.count()
-            completed_submissions = ReflectiveQuizSubmission.objects.filter(
+            # Get quiz submissions for this project
+            submissions = ReflectiveQuizSubmission.objects.filter(
                 student=student,
-                quiz__in=project.quizzes.all(),
-                is_correct=True
-            ).count()
+                quiz__in=project.quizzes.all()
+            )
 
-            # Project status: Completed if all quizzes are correctly answered
+            # Check if all quizzes are correctly answered
+            total_quizzes = project.quizzes.count()
+            completed_submissions = submissions.filter(is_correct=True).count()
             is_completed = completed_submissions == total_quizzes
 
-            project_info = StudentClassroomProjectSerializer(project).data
+            # Serialize project data and add submitted quizzes
+            serializer = StudentClassroomProjectSerializer(project)
+            project_info = serializer.data
+            project_info['submitted_quizzes'] = ReflectiveQuizSubmissionSerializer(submissions, many=True).data
             project_info['is_completed'] = is_completed
+
             project_data.append(project_info)
 
         return Response(project_data, status=status.HTTP_200_OK)
@@ -395,20 +399,23 @@ class StudentProjectDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        # Fetch quiz submissions for this project
+        submissions = ReflectiveQuizSubmission.objects.filter(
+            student=student,
+            quiz__in=project.quizzes.all()
+        )
+
         # Check completion status
         total_quizzes = project.quizzes.count()
-        completed_submissions = ReflectiveQuizSubmission.objects.filter(
-            student=student,
-            quiz__in=project.quizzes.all(),
-            is_correct=True
-        ).count()
-
+        completed_submissions = submissions.filter(is_correct=True).count()
         is_completed = completed_submissions == total_quizzes
 
+        # Serialize project data
         project_info = StudentClassroomProjectSerializer(project).data
+        project_info['submitted_quizzes'] = ReflectiveQuizSubmissionSerializer(submissions, many=True).data
         project_info['is_completed'] = is_completed
 
-        return Response(project_info, status=status.HTTP_200_OK)        
+        return Response(project_info, status=status.HTTP_200_OK)     
 
 class ReflectiveQuizSubmissionView(APIView):
     permission_classes = [IsSpecificStudent]
