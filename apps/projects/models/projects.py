@@ -142,7 +142,10 @@ class ReflectiveQuizSubmission(models.Model):
         related_name="submissions",
         db_column="QuizId"
     )
-    selected_option = models.IntegerField(db_column="SelectedOption")
+    selected_options = models.JSONField(
+        db_column="SelectedOptions",
+        help_text="Store selected options as a list, e.g., [1, 3]"
+    )
     is_correct = models.BooleanField(db_column="IsCorrect")
     submitted_at = models.DateTimeField(auto_now_add=True, db_column="SubmittedAt")
 

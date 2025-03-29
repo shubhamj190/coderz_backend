@@ -361,10 +361,34 @@ class StudentProjectsView(APIView):
             completed_submissions = submissions.filter(is_correct=True).count()
             is_completed = completed_submissions == total_quizzes
 
-            # Serialize project data and add submitted quizzes
+            # Prepare submission data with additional options
+            submission_data = []
+            for submission in submissions:
+                quiz = submission.quiz
+
+                # Map selected options to values
+                selected_values = [
+                    quiz.options.get(str(option), "Invalid Option")
+                    for option in submission.selected_options
+                ]
+
+                # Map all options for the quiz
+                all_options = [{"index": key, "value": value} for key, value in quiz.options.items()]
+
+                # Prepare detailed submission info
+                submission_data.append({
+                    "quiz_id": quiz.id,
+                    "question": quiz.question,
+                    "selected_options": selected_values,
+                    "is_correct": submission.is_correct,
+                    "all_options": all_options,
+                    "correct_answers": [quiz.options.get(str(index), "Invalid Option") for index in quiz.answers]
+                })
+
+            # Serialize project data and add detailed submissions
             serializer = StudentClassroomProjectSerializer(project)
             project_info = serializer.data
-            project_info['submitted_quizzes'] = ReflectiveQuizSubmissionSerializer(submissions, many=True).data
+            project_info['submitted_quizzes'] = submission_data
             project_info['is_completed'] = is_completed
 
             project_data.append(project_info)
@@ -433,34 +457,48 @@ class ReflectiveQuizSubmissionView(APIView):
         feedback = []
         for submission in data:
             quiz_id = submission.get("quiz_id")
-            selected_options = submission.get("selected_options", [])  # Expecting a list for multiple selections
+            selected_options = submission.get("selected_options", [])  # Expecting a list
 
             try:
                 # Fetch the quiz
                 quiz = ReflectiveQuiz.objects.get(id=quiz_id)
 
-                # Assuming quiz.answers is a list of correct options, e.g., [2, 3]
-                correct_answers = quiz.answers
-
-                # Check if selected options contain any correct answer
-                is_correct = any(option in correct_answers for option in selected_options)
-
-                # Save each selected option as a submission
-                for option in selected_options:
-                    ReflectiveQuizSubmission.objects.create(
-                        student=student,
-                        quiz=quiz,
-                        selected_option=option,
-                        is_correct=option in correct_answers
+                # Validate selected options
+                if not isinstance(selected_options, list):
+                    return Response(
+                        {"error": f"Selected options must be a list for quiz ID {quiz_id}."},
+                        status=status.HTTP_400_BAD_REQUEST
                     )
 
+                # Determine correctness
+                correct_answers = quiz.answers  # List of correct indices
+                is_correct = sorted(selected_options) == sorted(correct_answers)
+
+                # Save the submission with multi-select options
+                ReflectiveQuizSubmission.objects.create(
+                    student=student,
+                    quiz=quiz,
+                    selected_options=selected_options,
+                    is_correct=is_correct
+                )
+
                 # Prepare feedback
+                selected_values = [
+                    quiz.options.get(str(option_index), "Invalid Option")
+                    for option_index in selected_options
+                ]
+
+                correct_values = [
+                    quiz.options.get(str(answer_index), "Invalid Option")
+                    for answer_index in correct_answers
+                ]
+
                 feedback.append({
                     "quiz_id": quiz_id,
                     "question": quiz.question,
-                    "selected_options": selected_options,
+                    "selected_options": selected_values,
                     "is_correct": is_correct,
-                    "correct_answers": correct_answers
+                    "correct_answers": correct_values
                 })
 
             except ReflectiveQuiz.DoesNotExist:
