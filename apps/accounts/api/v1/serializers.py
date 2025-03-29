@@ -162,6 +162,7 @@ class TeacherDetailSerializer(serializers.ModelSerializer):
             "grade_division_mapping",
             "grade_division_mapping_update",
             "ContactNo",
+            "AdditionalContactNo",
         ]
     def get_grade_division_mapping(self, obj):
         """Fetch grade and division mapping from TeacherLocationDetails"""
