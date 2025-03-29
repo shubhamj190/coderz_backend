@@ -120,7 +120,7 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
     thumbnail = serializers.FileField(required=False)  # Allows file upload
     due_date = serializers.DateField(format="%Y-%m-%d", input_formats=["%Y-%m-%d"])
     assets = StudentAndTeacherProjectAssetSerializer(many=True, read_only=True)
-    quizzes = StudentAndTeacherReflectiveQuizSerializer(many=True, read_only=True)
+    quizzes = ReflectiveQuizSerializer(many=True, read_only=True)
     submitted_quizzes = ReflectiveQuizSubmissionSerializer(many=True, read_only=True)
 
     class Meta:
