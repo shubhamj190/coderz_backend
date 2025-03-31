@@ -14,6 +14,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics
+from django.db import transaction
 
 User = get_user_model()
 
@@ -118,13 +119,51 @@ class ReflectiveQuizCreateView(CreateAPIView):
 
         return Response(quizzes, status=status.HTTP_201_CREATED)
     
-class ReflectiveQuizRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
+class ReflectiveQuizReplaceAPIView(APIView):
     """
-    Retrieve and update a Reflective Quiz instance.
+    POST API to delete existing reflections of a project and create new ones.
+    Supports multiple quizzes in a single request.
     """
-    queryset = ReflectiveQuiz.objects.all()
     serializer_class = ReflectiveQuizSerializer
-    lookup_field = "id"  # The field used for retrieving the quiz
+
+    def post(self, request, project_id, *args, **kwargs):
+        # Fetch project instance
+        project = get_object_or_404(ClassroomProject, id=project_id)
+
+        # Delete existing quizzes
+        ReflectiveQuiz.objects.filter(project_id=project_id).delete()
+
+        quizzes = request.data.get("quizzes", [])
+
+        # Validate input data
+        if not isinstance(quizzes, list) or not quizzes:
+            return Response(
+                {"detail": "Invalid input. 'quizzes' must be a non-empty list."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        quiz_objects = []
+        errors = []
+
+        with transaction.atomic():
+            for quiz_data in quizzes:
+                quiz_data["project"] = project  # Pass project instance instead of ID
+
+                serializer = self.serializer_class(data=quiz_data)
+                if serializer.is_valid():
+                    serializer.save(project=project)  # Pass the project instance to save
+                    quiz_objects.append(serializer.instance)
+                else:
+                    errors.append(serializer.errors)
+
+            # Rollback if errors occurred
+            if errors:
+                transaction.set_rollback(True)
+                return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # Return created quizzes
+        response_data = self.serializer_class(quiz_objects, many=True).data
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 class CreateProjectSessionView(APIView):
     """
