@@ -186,6 +186,7 @@ class ProjectSessionListView(APIView):
     Only Admins and Teachers can access.
     """
     permission_classes = [IsAdminTeacherStudent]
+    parser_classes = [MultiPartParser, FormParser]  # To handle file uploads
 
     def get(self, request, *args, **kwargs):
         """

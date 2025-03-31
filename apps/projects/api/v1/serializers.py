@@ -104,7 +104,8 @@ class StudentClassroomProjectSerializer(serializers.ModelSerializer):
         fields = ["id", "title", "description", "assets", "quizzes", "grade", "division", "due_date", "thumbnail",'submitted_quizzes']
 
 class ProjectSessionSerializer(serializers.ModelSerializer):
-    file_type = serializers.ReadOnlyField()  # To include file type in response
+    file_type = serializers.ReadOnlyField()
+    thumbnail = serializers.ImageField(use_url=True, read_only=True)  # Explicitly handle thumbnail
 
     class Meta:
         model = ProjectSession

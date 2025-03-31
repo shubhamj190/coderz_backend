@@ -77,6 +77,7 @@ class ProjectSession(models.Model):
     title = models.CharField(max_length=255)   # e.g. “Session 01”
     overview_text = models.TextField(blank=True, null=True)
     ppt_file = models.FileField(upload_to="projects/sessions/", blank=True, null=True)
+    thumbnail = models.ImageField(upload_to="projects/thumbnails/", blank=True, null=True)
     # You can add more fields for session content, videos, attachments, etc.
 
     # If you have a concept of “Module” or “Module Name” (e.g., “VS-Code”), add it:
