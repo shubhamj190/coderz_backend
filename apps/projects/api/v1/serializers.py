@@ -111,6 +111,15 @@ class ProjectSessionSerializer(serializers.ModelSerializer):
         model = ProjectSession
         fields = "__all__"
 
+class ProjectSessionUpdateSerializer(serializers.ModelSerializer):
+    file_type = serializers.ReadOnlyField()
+    thumbnail = serializers.ImageField(use_url=True, required=False)  # Allow upload
+    ppt_file = serializers.FileField(use_url=True, required=False)   # Allow upload
+
+    class Meta:
+        model = ProjectSession
+        fields = "__all__"
+
 class ProjectSubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectSubmission

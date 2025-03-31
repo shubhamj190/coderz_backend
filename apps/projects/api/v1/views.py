@@ -7,7 +7,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserDetails, UserGroup
-from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer, ReflectiveQuizSubmissionSerializer, StudentClassroomProjectSerializer, TeacherClassroomProjectSerializer, UpdateProjectAssetsSerializer
+from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSessionUpdateSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer, ReflectiveQuizSubmissionSerializer, StudentClassroomProjectSerializer, TeacherClassroomProjectSerializer, UpdateProjectAssetsSerializer
 from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz, ReflectiveQuizSubmission
 from core.permissions.role_based import IsAdminOrTeacher, IsAdminTeacherStudent, IsSpecificStudent, IsSpecificAdmin, IsSpecificTeacher
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -159,7 +159,7 @@ class UpdateProjectSessionView(APIView):
         Full update (PUT) - All fields must be provided.
         """
         session = get_object_or_404(ProjectSession, id=session_id)  # Ensure session exists
-        serializer = ProjectSessionSerializer(session, data=request.data)
+        serializer = ProjectSessionUpdateSerializer(session, data=request.data, partial=True)  # <-- Use partial=True
 
         if serializer.is_valid():
             serializer.save()
@@ -172,7 +172,7 @@ class UpdateProjectSessionView(APIView):
         Partial update (PATCH) - Only provided fields are updated.
         """
         session = get_object_or_404(ProjectSession, id=session_id)
-        serializer = ProjectSessionSerializer(session, data=request.data, partial=True)
+        serializer = ProjectSessionUpdateSerializer(session, data=request.data, partial=True)
 
         if serializer.is_valid():
             serializer.save()
