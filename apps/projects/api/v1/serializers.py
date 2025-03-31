@@ -125,17 +125,41 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ClassroomProject
-        fields = ['id', 'title', 'description', 'grade', 'division', 'assigned_teacher', 'thumbnail', 'due_date','assets', 'quizzes', 'submitted_quizzes']
-    
+        fields = ['id', 'title', 'description', 'grade', 'division', 'assigned_teacher', 'thumbnail', 'due_date', 'assets', 'quizzes', 'submitted_quizzes']
+
+    def to_internal_value(self, data):
+        # Create a mutable copy of the data
+        data = data.copy()
+
+        grade_name = data.get('grade')
+        division_name = data.get('division')
+
+        # Fetch Grade and Division objects using names
+        grade = Grade.objects.filter(GradeName=grade_name).first()
+        division = Division.objects.filter(DivisionName=division_name).first()
+
+        if not grade:
+            raise serializers.ValidationError({"grade": "Invalid grade name provided."})
+        if not division:
+            raise serializers.ValidationError({"division": "Invalid division name provided."})
+
+        # Replace names with actual objects
+        data['grade'] = grade.id
+        data['division'] = division.DivisionId
+
+        return super().to_internal_value(data)
+
     def create(self, validated_data):
-        grade=validated_data['grade'].GradeName
-        division=validated_data['division'].DivisionName
-        group_name=f"{grade} - {division}"
+        grade = validated_data['grade']
+        division = validated_data['division']
+        group_name = f"{grade.GradeName} - {division.DivisionName}"
         print(group_name)
-        # Automatically assign group and teacher
+
+        # Fetch group and teacher
         group = GroupMaster.objects.filter(GroupName=group_name).first()
         if not group:
             raise serializers.ValidationError("No group found for the given grade and division.")
+
         group_teacher = TeacherLocationDetails.objects.filter(GroupId=group.GroupId).first().UserId
         assigned_teacher = User.objects.filter(UserId=group_teacher).first()
         if not assigned_teacher:
@@ -144,8 +168,8 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
         classroom_project = ClassroomProject.objects.create(
             title=validated_data['title'],
             description=validated_data['description'],
-            grade=validated_data['grade'],
-            division=validated_data['division'],
+            grade=grade,
+            division=division,
             thumbnail=validated_data.get('thumbnail'),
             due_date=validated_data['due_date'],
             group=group,
