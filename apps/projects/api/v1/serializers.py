@@ -127,18 +127,33 @@ class ProjectSubmissionSerializer(serializers.ModelSerializer):
         read_only_fields = ["submitted_at"]
 
 class ClassroomProjectSerializer(serializers.ModelSerializer):
-    thumbnail = serializers.FileField(required=False)  # Allows file upload
+    thumbnail = serializers.FileField(required=False)
     due_date = serializers.DateField(format="%Y-%m-%d", input_formats=["%Y-%m-%d"])
     assets = StudentAndTeacherProjectAssetSerializer(many=True, read_only=True)
     quizzes = ReflectiveQuizSerializer(many=True, read_only=True)
     submitted_quizzes = ReflectiveQuizSubmissionSerializer(many=True, read_only=True)
 
+    # Custom fields for GET request
+    grade_name = serializers.SerializerMethodField()
+    division_name = serializers.SerializerMethodField()
+
     class Meta:
         model = ClassroomProject
-        fields = ['id', 'title', 'description', 'grade', 'division', 'assigned_teacher', 'thumbnail', 'due_date', 'assets', 'quizzes', 'submitted_quizzes']
+        fields = [
+            'id', 'title', 'description', 'grade', 'division', 'assigned_teacher', 
+            'thumbnail', 'due_date', 'assets', 'quizzes', 'submitted_quizzes',
+            'grade_name', 'division_name'  # Include custom fields
+        ]
+
+    # Method to retrieve grade name
+    def get_grade_name(self, obj):
+        return obj.grade.GradeName if obj.grade else None
+
+    # Method to retrieve division name
+    def get_division_name(self, obj):
+        return obj.division.DivisionName if obj.division else None
 
     def to_internal_value(self, data):
-        # Create a mutable copy of the data
         data = data.copy()
 
         grade_name = data.get('grade')
