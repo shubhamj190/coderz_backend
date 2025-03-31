@@ -105,7 +105,7 @@ class StudentClassroomProjectSerializer(serializers.ModelSerializer):
 
 class ProjectSessionSerializer(serializers.ModelSerializer):
     file_type = serializers.ReadOnlyField()
-    thumbnail = serializers.ImageField(use_url=True, read_only=True)  # Explicitly handle thumbnail
+    thumbnail = serializers.ImageField(use_url=True, required=False)  # Allow upload
 
     class Meta:
         model = ProjectSession
