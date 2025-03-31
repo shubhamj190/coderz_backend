@@ -4,7 +4,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
 from apps.accounts.models.grades import Division, Grade
-from apps.accounts.models.user import GroupMaster, TeacherLocationDetails
+from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserGroup
 from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz, ReflectiveQuizSubmission
 from apps.projects.utils import get_teacher_for_grade_division
 from rest_framework import viewsets, status
@@ -121,10 +121,30 @@ class ProjectSessionUpdateSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 class ProjectSubmissionSerializer(serializers.ModelSerializer):
+    student_name = serializers.SerializerMethodField()
+    grade_name = serializers.SerializerMethodField()
+    division_name = serializers.SerializerMethodField()
+
     class Meta:
         model = ProjectSubmission
-        fields = ["id", "project", "student", "submission_file", "submitted_at", "feedback"]
+        fields = ["id", "project", "student", "submission_file", "submitted_at", "feedback", "student_name", "grade_name","division_name"]
         read_only_fields = ["submitted_at"]
+
+    # Fetch student's full name
+    def get_student_name(self, obj):
+        return f"{obj.student.FirstName} {obj.student.LastName}"
+
+    # Fetch grade name
+    def get_grade_name(self, obj):
+        if obj.student.GradeId:
+            grade=Grade.objects.filter(GradeId=obj.student.GradeId).first()
+            return grade.GradeName if grade else None
+        return None
+
+    # Fetch division name
+    def get_division_name(self, obj):
+        user_group = UserGroup.objects.filter(user=obj.student.user).first()
+        return user_group.GID.GroupName.split("-")[1].strip() if user_group and user_group.GID else None
 
 class ClassroomProjectSerializer(serializers.ModelSerializer):
     thumbnail = serializers.FileField(required=False)
