@@ -109,6 +109,11 @@ class ProjectSubmission(models.Model):
         on_delete=models.CASCADE, 
         related_name='project_submissions'
     )
+    teacher = models.ForeignKey(
+        'accounts.UserDetails', 
+        on_delete=models.CASCADE, 
+        related_name='project_submissions_teacher'
+    )
     submission_file = models.FileField(
         upload_to='project_submissions/', 
         blank=True, 

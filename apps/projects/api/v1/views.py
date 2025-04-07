@@ -5,16 +5,19 @@ from rest_framework.generics import CreateAPIView, UpdateAPIView,RetrieveUpdateA
 from rest_framework.views import APIView
 from rest_framework import viewsets, status
 from rest_framework.response import Response
+from django.http import JsonResponse
 from django.contrib.auth import get_user_model
 from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserDetails, UserGroup
 from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSessionUpdateSerializer, ProjectSubmissionEvaluationSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer, ReflectiveQuizSubmissionSerializer, StudentClassroomProjectSerializer, TeacherClassroomProjectSerializer, UpdateProjectAssetsSerializer
 from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz, ReflectiveQuizSubmission
+from core.middlewares.global_pagination import StandardResultsSetPagination
 from core.permissions.role_based import IsAdminOrTeacher, IsAdminTeacherStudent, IsSpecificStudent, IsSpecificAdmin, IsSpecificTeacher
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics
 from django.db import transaction
+from django.db.models import Q
 
 User = get_user_model()
 
@@ -296,35 +299,55 @@ class ProjectSubmissionCreateView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-class ProjectSubmissionListView(APIView):
+class ProjectSubmissionListView(ListAPIView):
+    serializer_class = ProjectSubmissionSerializer
     permission_classes = [IsAdminTeacherStudent]
+    pagination_class = StandardResultsSetPagination
 
-    def get(self, request, *args, **kwargs):
-        user = request.user
-        user_type = user.details.UserType  # Assuming user_type is stored in UserDetails model
+    def get_queryset(self):
+        user = self.request.user
+        user_type = user.details.UserType
 
-        # **Admin: Fetch all submissions**
+        # Get query params
+        faculty_id = self.request.query_params.get('faculty')
+        division = self.request.query_params.get('division')
+        pending = self.request.query_params.get('pending')
+
+        queryset = ProjectSubmission.objects.all()
+
         if user_type == "Admin":
-            submissions = ProjectSubmission.objects.all()
-
-        # **Teacher: Fetch submissions for projects linked to teacher's group**
+            pass  # Keep full queryset
         elif user_type == "Teacher":
             group_teacher = TeacherLocationDetails.objects.filter(UserId=user.UserId).values_list('GID_id', flat=True)
-            projects = ClassroomProject.objects.filter(group__GID__in=[group_teacher])
-            submissions = ProjectSubmission.objects.filter(project__in=projects)
-
-        # **Student: Fetch only the logged-in student's submissions**
+            projects = ClassroomProject.objects.filter(group__GID__in=group_teacher)
+            queryset = queryset.filter(project__in=projects)
         elif user_type == "Learner":
-            submissions = ProjectSubmission.objects.filter(student=user.details)
-
+            queryset = queryset.filter(student=user.details)
         else:
-            return Response(
-                {"error": "Unauthorized user type."},
-                status=status.HTTP_403_FORBIDDEN
-            )
+            return ProjectSubmission.objects.none()
 
-        serializer = ProjectSubmissionSerializer(submissions, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # Apply filters
+        if faculty_id:
+            queryset = queryset.filter(project__faculty__UserId=faculty_id)
+
+        if division:
+            queryset = queryset.filter(student__Division=division)
+
+        if pending == 'true':
+            queryset = queryset.filter(Q(teacher_evaluation__isnull=True) | Q(teacher_evaluation=""))
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return JsonResponse({'data':serializer.data}, status=status.HTTP_200_OK)
 
 class TeacherProjectsView(APIView):
     permission_classes = [IsSpecificTeacher]  # Ensure only logged-in users can access

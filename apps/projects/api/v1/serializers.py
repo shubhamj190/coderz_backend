@@ -127,12 +127,16 @@ class ProjectSubmissionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProjectSubmission
-        fields = ["id", "project", "student", "submission_file", "submitted_at", "feedback", "student_name", "grade_name","division_name"]
+        fields = ["id", "project", "student", "submission_file", "submitted_at", "feedback", "student_name", "grade_name","division_name","teacher_evaluation", "teacher",]
         read_only_fields = ["submitted_at"]
 
     # Fetch student's full name
     def get_student_name(self, obj):
         return f"{obj.student.FirstName} {obj.student.LastName}"
+    
+    # Fetch student's full name
+    def get_teacher_name(self, obj):
+        return f"{obj.teacher.FirstName} {obj.teacher.LastName}"
 
     # Fetch grade name
     def get_grade_name(self, obj):
