@@ -7,7 +7,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserDetails, UserGroup
-from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSessionUpdateSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer, ReflectiveQuizSubmissionSerializer, StudentClassroomProjectSerializer, TeacherClassroomProjectSerializer, UpdateProjectAssetsSerializer
+from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSessionUpdateSerializer, ProjectSubmissionEvaluationSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer, ReflectiveQuizSubmissionSerializer, StudentClassroomProjectSerializer, TeacherClassroomProjectSerializer, UpdateProjectAssetsSerializer
 from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz, ReflectiveQuizSubmission
 from core.permissions.role_based import IsAdminOrTeacher, IsAdminTeacherStudent, IsSpecificStudent, IsSpecificAdmin, IsSpecificTeacher
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -21,7 +21,7 @@ User = get_user_model()
 class ClassroomProjectCreateView(CreateAPIView):
     queryset = ClassroomProject.objects.all()
     serializer_class = ClassroomProjectSerializer
-    permission_classes = [IsSpecificAdmin]  # Optional: Require authentication
+    permission_classes = [IsSpecificAdmin, IsSpecificTeacher]  # Optional: Require authentication
     
 class ClassroomProjectListView(ListAPIView):
     queryset = ClassroomProject.objects.all()
@@ -34,7 +34,7 @@ class ClassroomProjectRetrieveUpdateView(RetrieveUpdateAPIView):
     queryset = ClassroomProject.objects.all()
     serializer_class = ClassroomProjectSerializer
     parser_classes = (MultiPartParser, FormParser)  # Supports file uploads
-    permission_classes = [IsSpecificAdmin]  # Optional authentication
+    permission_classes = [IsSpecificAdmin, IsSpecificTeacher]  # Optional authentication
 
     def get_object(self):
         """
@@ -45,6 +45,7 @@ class ClassroomProjectRetrieveUpdateView(RetrieveUpdateAPIView):
 
 class ProjectAssetCreateView(CreateAPIView):
     serializer_class = ProjectAssetSerializer
+    permission_classes = [IsSpecificAdmin, IsSpecificTeacher]
 
     def post(self, request, project_id, *args, **kwargs):
         try:
@@ -77,6 +78,7 @@ class ProjectAssetCreateView(CreateAPIView):
 class RetrieveUpdateProjectAssetsView(RetrieveUpdateAPIView):
     queryset = ClassroomProject.objects.all()
     serializer_class = UpdateProjectAssetsSerializer
+    permission_classes = [IsSpecificAdmin, IsSpecificTeacher]
     lookup_field = "pk"
 
     def get(self, request, *args, **kwargs):
@@ -97,6 +99,7 @@ class RetrieveUpdateProjectAssetsView(RetrieveUpdateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 class ReflectiveQuizCreateView(CreateAPIView):
     serializer_class = ReflectiveQuizSerializer
+    permission_classes = [IsSpecificAdmin, IsSpecificTeacher]
 
     def post(self, request, project_id, *args, **kwargs):
         """
@@ -125,6 +128,7 @@ class ReflectiveQuizReplaceAPIView(APIView):
     Supports multiple quizzes in a single request.
     """
     serializer_class = ReflectiveQuizSerializer
+    permission_classes = [IsSpecificAdmin, IsSpecificTeacher]
 
     def post(self, request, project_id, *args, **kwargs):
         # Fetch project instance
@@ -170,7 +174,7 @@ class CreateProjectSessionView(APIView):
     API to create a Project Session. 
     Only Admins and Teachers can create sessions.
     """
-    permission_classes = [IsAdminOrTeacher]  
+    permission_classes = [IsSpecificAdmin, IsSpecificTeacher]  
     parser_classes = [MultiPartParser, FormParser]  # To handle file uploads
 
     def post(self, request, *args, **kwargs):
@@ -190,7 +194,7 @@ class UpdateProjectSessionView(APIView):
     API to update a Project Session. 
     Only Admins and Teachers can update sessions.
     """
-    permission_classes = [IsAdminOrTeacher]
+    permission_classes = [IsSpecificAdmin, IsSpecificTeacher]
     parser_classes = [MultiPartParser, FormParser]  # To handle file uploads
 
     def put(self, request, session_id, *args, **kwargs):
@@ -569,3 +573,35 @@ class ReflectiveQuizCompletionCountView(APIView):
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
+    
+class ProjectEvaluationView(APIView):
+    permission_classes = [IsSpecificTeacher]
+
+    def get(self, request, submission_id):
+        try:
+            submission = ProjectSubmission.objects.get(id=submission_id)
+        except ProjectSubmission.DoesNotExist:
+            return Response({'error': 'Submission not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Ensure student can only access their own submission
+        if request.user != submission.student and request.user.details.UserType not in ['Admin','Teacher']:
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = ProjectSubmissionEvaluationSerializer(submission)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request, submission_id):
+        try:
+            submission = ProjectSubmission.objects.get(id=submission_id)
+        except ProjectSubmission.DoesNotExist:
+            return Response({'error': 'Submission not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Only teachers (or staff) can update evaluation
+        if request.user.details.UserType not in ['Admin', 'Teacher']:
+            return Response({'error': 'Only teachers can evaluate projects'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = ProjectSubmissionEvaluationSerializer(submission, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Evaluation updated successfully'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

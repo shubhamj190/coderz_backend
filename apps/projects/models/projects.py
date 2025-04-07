@@ -116,6 +116,7 @@ class ProjectSubmission(models.Model):
     )
     submitted_at = models.DateTimeField(auto_now_add=True)
     feedback = models.TextField(blank=True, null=True)
+    teacher_evaluation = models.TextField(blank=True, null=True)
     marks_obtained = models.DecimalField(
         max_digits=5, 
         decimal_places=2, 

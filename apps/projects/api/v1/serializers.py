@@ -222,3 +222,9 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
         )
 
         return classroom_project
+    
+class ProjectSubmissionEvaluationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectSubmission
+        fields = ['id', 'teacher_evaluation']
+        read_only_fields = ['id']

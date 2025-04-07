@@ -5,6 +5,7 @@ from apps.projects.api.v1.views import (
     ClassroomProjectListView,
     ClassroomProjectRetrieveUpdateView,
     ProjectAssetCreateView,
+    ProjectEvaluationView,
     ProjectSubmissionListView,
     ReflectiveQuizCompletionCountView,
     ReflectiveQuizCreateView,
@@ -44,4 +45,5 @@ urlpatterns = [
     path("student/projects/<int:project_id>/", StudentProjectDetailView.as_view(), name="student-project-detail"),
     path('submit-reflective-quiz/', ReflectiveQuizSubmissionView.as_view(), name='submit_reflective_quiz'),
     path('students/completed-reflective-quizzes/', ReflectiveQuizCompletionCountView.as_view(), name='loggedin_student_completed_quizzes_count'),
+    path('project-submission/<int:submission_id>/evaluation/', ProjectEvaluationView.as_view(), name='project-evaluation'),
 ]
