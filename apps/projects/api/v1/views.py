@@ -7,7 +7,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.http import JsonResponse
 from django.contrib.auth import get_user_model
-from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserDetails, UserGroup
+from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserDetails, UserGroup, UsersIdentity
 from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSessionUpdateSerializer, ProjectSubmissionEvaluationSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer, ReflectiveQuizSubmissionSerializer, StudentClassroomProjectSerializer, TeacherClassroomProjectSerializer, UpdateProjectAssetsSerializer
 from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz, ReflectiveQuizSubmission
 from core.middlewares.global_pagination import StandardResultsSetPagination
@@ -402,6 +402,9 @@ class StudentProjectsView(APIView):
 
     def get(self, request, *args, **kwargs):
         student = request.user  # Assuming the student is logged in
+        student_identity=UsersIdentity.objects.filter(UserName=student.username).first()
+        if student_identity is not None:
+            student=student_identity
 
         # Ensure the student has groups assigned
         student_groups = UserGroup.objects.filter(user=student).values_list('GroupId', flat=True)
