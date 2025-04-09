@@ -263,6 +263,9 @@ class ProjectSubmissionCreateView(APIView):
         Handle project submission.
         """
         student = request.user  # Get logged-in student
+        student_identity=UsersIdentity.objects.filter(UserName=student.username).first()
+        if student_identity is not None:
+            student=student_identity
 
         # Ensure student role is valid
         if not hasattr(student, 'role') or student.role != 'Learner':
@@ -354,6 +357,9 @@ class TeacherProjectsView(APIView):
 
     def get(self, request, *args, **kwargs):
         teacher = request.user  # Assuming `request.user` is a Teacher
+        teacher_identity=UsersIdentity.objects.filter(UserName=teacher.username).first()
+        if teacher_identity is not None:
+            teacher=teacher_identity
 
         # Retrieve all projects assigned to the logged-in teacher
         projects = (
@@ -370,6 +376,9 @@ class TeacherProjectDetailView(APIView):
 
     def get(self, request, project_id, *args, **kwargs):
         teacher = request.user  # Assuming `request.user` is a Teacher
+        teacher_identity=UsersIdentity.objects.filter(UserName=teacher.username).first()
+        if teacher_identity is not None:
+            teacher=teacher_identity
 
         try:
             # Fetch project assigned to this teacher
@@ -470,6 +479,9 @@ class StudentProjectDetailView(APIView):
 
     def get(self, request, project_id, *args, **kwargs):
         student = request.user  # Assuming `request.user` is a Student
+        student_identity=UsersIdentity.objects.filter(UserName=student.username).first()
+        if student_identity is not None:
+            student=student_identity
 
         # Check if the student belongs to any group
         student_groups = UserGroup.objects.filter(user=student).values_list('GroupId', flat=True)
@@ -516,6 +528,9 @@ class ReflectiveQuizSubmissionView(APIView):
 
     def post(self, request, *args, **kwargs):
         student = request.user  # Assuming request.user is a student
+        student_identity=UsersIdentity.objects.filter(UserName=student.username).first()
+        if student_identity is not None:
+            student=student_identity
         data = request.data.get("submissions", [])
 
         if not data:
@@ -587,6 +602,9 @@ class ReflectiveQuizCompletionCountView(APIView):
 
     def get(self, request, *args, **kwargs):
         student = request.user  # Logged-in student
+        student_identity=UsersIdentity.objects.filter(UserName=student.username).first()
+        if student_identity is not None:
+            student=student_identity
         # Get the count of completed reflective quizzes
         completed_count = ReflectiveQuizSubmission.objects.filter(
             student=student,
