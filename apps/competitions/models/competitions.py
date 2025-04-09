@@ -11,7 +11,7 @@ class Competition(models.Model):
 
 class CompetitionSubmission(models.Model):
     competition = models.ForeignKey('Competition', on_delete=models.CASCADE)
-    student = models.ForeignKey('accounts.User', on_delete=models.CASCADE)
+    student = models.ForeignKey('accounts.UsersIdentity', on_delete=models.CASCADE)
     submission_file = models.FileField(upload_to='competition_submissions/')
     submitted_at = models.DateTimeField(auto_now_add=True)
     score = models.DecimalField(max_digits=5, decimal_places=2, null=True)

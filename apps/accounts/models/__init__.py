@@ -1,5 +1,5 @@
 # Critical for model discovery
-from .user import User, UserDetails
+from .user import UsersIdentity, UserDetails, UserMaster
 from .grades import Grade, Division
 
-__all__ = ['User', 'UserDetails', 'Grade', 'Division']
+__all__ = ['UsersIdentity', 'UserDetails', 'Grade', 'Division','UserMaster']

@@ -2,7 +2,7 @@ import os
 from django.db import models
 
 from apps.accounts.models.grades import Division, Grade
-from apps.accounts.models.user import User
+from apps.accounts.models.user import UsersIdentity as User
 
 class ClassroomProject(models.Model):
     title = models.CharField(max_length=255)  # e.g., “Odd-Even Number”

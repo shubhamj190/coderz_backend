@@ -63,7 +63,7 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     # Tell Simple JWT to use 'UserId' as the identifier field:
-    'USER_ID_FIELD': 'UserId',
+    'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -127,7 +127,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = 'accounts.User'  # Should match exactly
+AUTH_USER_MODEL = 'accounts.UserMaster'  # Should match exactly
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',

@@ -50,3 +50,8 @@ ALLOWED_HOSTS=['viable-reasonably-goldfish.ngrok-free.app', 'localhost','coding1
 CSRF_TRUSTED_ORIGINS=['https://viable-reasonably-goldfish.ngrok-free.app','http://localhost:3000','https://coding1.questplus.in','https://coding2.questplus.in']
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
+
+ENC_KEY = os.getenv("ENC_KEY", "4k2bv6CRCbCYoVM9CfpIzjh2slagTK5N")
+
+QuestApi = "https://api.questplus.in/"
+QuestWeb = "https://admin.questplus.in/"

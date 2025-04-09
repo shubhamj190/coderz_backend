@@ -1,5 +1,5 @@
 from django.contrib.auth.backends import ModelBackend
-from apps.accounts.models.user import User
+from apps.accounts.models.user import UserMaster as User
 
 class RoleBasedBackend(ModelBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):

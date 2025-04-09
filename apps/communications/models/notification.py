@@ -9,8 +9,8 @@ class Notification(models.Model):
     is_read = models.BooleanField(default=False)
 
 class Message(models.Model):
-    sender = models.ForeignKey('accounts.User', related_name='sent_messages', on_delete=models.CASCADE)
-    receiver = models.ForeignKey('accounts.User', related_name='received_messages', on_delete=models.CASCADE)
+    sender = models.ForeignKey('accounts.UsersIdentity', related_name='sent_messages', on_delete=models.CASCADE)
+    receiver = models.ForeignKey('accounts.UsersIdentity', related_name='received_messages', on_delete=models.CASCADE)
     subject = models.CharField(max_length=255)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)

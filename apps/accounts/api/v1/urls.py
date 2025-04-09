@@ -19,13 +19,13 @@ from .views import (
     TeacherListAPIView,
     StudentSSOLoginView,
     UnifiedForgotPasswordAPIView,
-    UnifiedLoginView,
+    UniversalAuthenticator,
     UnifiedLogoutView,
 )
 
 urlpatterns = [
     # auth endpoints
-    path('login/', UnifiedLoginView.as_view(), name='login'),
+    path('login/', UniversalAuthenticator, name='login'),
     path('student/sso-login/', StudentSSOLoginView.as_view(), name='student_sso_login'),
     path('logout/', UnifiedLogoutView.as_view(), name='logout'),
     path('forgot-password/', UnifiedForgotPasswordAPIView.as_view(), name='forgot-password'),

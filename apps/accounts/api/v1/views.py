@@ -1,6 +1,7 @@
 import base64
 import logging
 from django.shortcuts import get_object_or_404
+import jwt
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -10,7 +11,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from apps.accounts.models.grades import Division, Grade, GradeDivisionMapping
 from apps.accounts.tasks import process_bulk_upload_students
-from apps.accounts.utils import user_name_creator
+from apps.accounts.utils import UniversalAuthenticationHandeler, create_response, decrypt_AES_CBC, registerUser, user_name_creator
 from core.middlewares.global_pagination import StandardResultsSetPagination
 from core.permissions.role_based import IsSpecificAdmin
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -22,6 +23,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import transaction
 from django.db.models import Prefetch
 from django.utils.timezone import now
+from rest_framework.decorators import api_view, permission_classes
+from django.contrib.auth import authenticate
 
 from .serializers import (
     DivisionSerializer,
@@ -33,50 +36,126 @@ from .serializers import (
     TeacherCreateSerializer,
     TeacherDetailSerializer,
     TeacherListSerializer,
-    CustomTokenObtainPairSerializer
+    CustomTokenObtainPairSerializer,
+    UniversalAuthenticateUserSeralizer
 )
 
-from apps.accounts.models.user import GroupMaster, User, UserDetails
+from apps.accounts.models.user import GroupMaster, RolesV2, UserDetails, UserMaster, UserRoles, UsersIdentity
+from apps.accounts.models.user import UsersIdentity as User
 
 logger = logging.getLogger(__name__)
 
 # Login API views
 
-class UnifiedLoginView(TokenObtainPairView):
-    """
-    A unified login view for all user types.
-    
-    Optionally, the client can include a "login_as" field in the request body
-    (with values like "admin", "teacher", or "student") to enforce role-specific login.
-    """
-    # Use the base serializer which returns user info in serializer.user
-    serializer_class = CustomTokenObtainPairSerializer  
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def UniversalAuthenticator(request):
+    try:
+        with transaction.atomic():
+            # {payload:{},Platform:0,1,2}
+            data = request.data
+            data = data.get("payload")
+            seralizer = UniversalAuthenticateUserSeralizer(data=data)
+            if not seralizer.is_valid():
+                return create_response(
+                    seralizer.errors, status=status.HTTP_400_BAD_REQUEST
+                )
+            data = seralizer.data
+            username = data.get("username")
+            password = data.get("password")
+            password = decrypt_AES_CBC(password)
+            platform = data.get("platform")
+            isLogger = data.get("isLogger")
+            moduleName = data.get("moduleName")
+            eventName = data.get("eventName")
+            dataId = data.get("dataId")
+            DeviceId = data.get("DeviceId")
 
-    def post(self, request, *args, **kwargs):
-        # Optionally extract role filter from request data.
-        
-        serializer = self.get_serializer(data=request.data)
-        try:
-            serializer.is_valid(raise_exception=True)
-        except Exception as e:
-            logger.error(f"Login error: {str(e)}")
-            return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
-        
-        # Instead of calling authenticate again, we get the user from the serializer.
-        user = serializer.user
-        
-        if not user:
-            return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
-        
-        # Generate JWT tokens for the user.
-        refresh = RefreshToken.for_user(user)
-        response_data = {
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-            "role": user.details.UserType if hasattr(user, 'details') and user.details else None,
-            "user_id": user.UserId
-        }
-        return Response(response_data, status=status.HTTP_200_OK)
+            # verify  which api should be called
+            Success, authenticated_data = UniversalAuthenticationHandeler(
+                username=username,
+                password=password,
+                platform=platform,
+                isLogger=isLogger,
+                moduleName=moduleName,
+                eventName=eventName,
+                dataId=dataId,
+                DeviceId=DeviceId,
+            )
+            if not Success:
+                return authenticated_data
+            # Check if user exists
+            user = (
+                UserMaster.objects.filter(username=username, IsDeleted=False)
+                .values()
+                .first()
+            )
+            # if no create new user else skip
+            if not user:
+                user_data = (
+                    UsersIdentity.objects.filter(
+                        UserName=username, IsActive=True, IsDeleted=False
+                    )
+                    .values()
+                    .first()
+                )
+                user_data["username"] = username
+                user_data["password"] = password
+                registered_user, registered_user_instance = registerUser(user_data)
+                if registered_user.status_code != 201:
+                    return registered_user
+                registered_user = registered_user.data.get("payload")
+                # noe register role
+                role_data = UserRoles.objects.filter(
+                    UserId=user_data.get("UserId")
+                ).values_list("RoleId__Id", flat=True)
+                role_data = RolesV2.objects.get(Id=role_data[0])
+                register_role_data = UserRoles.objects.create(
+                    UserId=registered_user_instance, RoleId=role_data
+                )
+                register_role_data.save()
+            # authenticate user ang generate token for python
+            user = authenticate(username=username, password=password)
+            if user is None:
+                return create_response("Invalid login credentials")
+            if platform==0:
+                cid=authenticated_data.get("userId")
+            elif platform==1:
+                cid=authenticated_data.get("data")
+                cid=cid.get("questToken")
+                cid=jwt.decode(cid,options={"verify_signature":False})
+                cid=cid.get('http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier')
+            else:
+                cid=authenticated_data.get("token")
+                cid=jwt.decode(cid,options={"verify_signature":False})
+                cid=cid.get('http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier')
+            Token = RefreshToken.for_user(user)
+            Token["id"] = user.id
+            Token["username"] = user.username
+            Token["cid"]=cid
+
+            payload = {
+                "username": user.username,
+                "id": user.id,
+                "token": {"refresh": str(Token), "access": str(Token.access_token)},
+                "DotNetAuth": authenticated_data,
+            }
+
+            # if the user is authenicated get their role details
+            # register user and the roles in django table.
+            # generate token
+
+            return create_response(
+                message="User Authenticated Successfully",
+                status=status.HTTP_202_ACCEPTED,
+                payload=payload,
+            )
+    except Exception as e:
+        logging.exception(e)
+        return create_response(
+            message="User Authentication Failed",
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 class StudentSSOLoginView(APIView):
