@@ -3,7 +3,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from apps.accounts.models.user import UserDetails  # Adjust import paths as needed
 from apps.accounts.models.grades import Grade, Division  # Adjust import paths as needed
 from apps.courses.models.courses import Course  # Adjust import path as needed
 
@@ -84,6 +83,7 @@ class Schedule(models.Model):
 
 
 class ScheduleSlot(models.Model):
+    from apps.accounts.models.user import UserDetails
     """
     Represents an individual class slot in the schedule.
     Connects the schedule, day, time, course, and teacher.

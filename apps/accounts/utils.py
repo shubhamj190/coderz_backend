@@ -1,4 +1,4 @@
-from apps.accounts.models.user import User, UserDetails
+from apps.accounts.models.user import UsersIdentity, UserDetails
 def user_name_creator(user_type, user):
     UserName = None
     if user_type == 'Learner':
@@ -20,6 +20,6 @@ def user_name_creator(user_type, user):
             # Use a prefix based on the user_type.
             prefix_map = {'Admin': 'A', 'Teacher': 'F'}
             prefix = prefix_map.get(user_type, 'S')
-            count = User.objects.all().count()
+            count = UsersIdentity.objects.all().count()
             UserName = f"{prefix}{count + 1:03d}"
     return UserName

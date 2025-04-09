@@ -5,7 +5,8 @@ from datetime import datetime
 from celery import shared_task
 from django.db import transaction
 from django.forms import ValidationError
-from apps.accounts.models.user import GroupMaster, Location, UserDetails, User, UserGroup
+from apps.accounts.models.user import GroupMaster, Location, UserDetails, UserGroup
+from apps.accounts.models.user import UsersIdentity as User
 from apps.accounts.models.grades import Grade, Division
 from apps.accounts.utils import user_name_creator
 

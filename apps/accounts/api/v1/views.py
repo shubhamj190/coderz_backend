@@ -36,7 +36,8 @@ from .serializers import (
     CustomTokenObtainPairSerializer
 )
 
-from apps.accounts.models.user import GroupMaster, User, UserDetails
+from apps.accounts.models.user import GroupMaster, UserDetails
+from apps.accounts.models.user import UsersIdentity as User
 
 logger = logging.getLogger(__name__)
 

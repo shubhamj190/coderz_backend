@@ -3,7 +3,8 @@ from django.forms import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 from apps.accounts.models.grades import GradeDivisionMapping
-from apps.accounts.models.user import GroupMaster, Location, TeacherLocationDetails, UserDetails, User, UserGroup
+from apps.accounts.models.user import GroupMaster, Location, TeacherLocationDetails, UserDetails, UserGroup
+from apps.accounts.models.user import UsersIdentity as User
 from apps.accounts.models import Grade, Division
 from django.db import transaction
 
@@ -36,7 +37,6 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
     first_name = serializers.CharField(write_only=True)
     last_name = serializers.CharField(write_only=True)
-    gender = serializers.ChoiceField(choices=UserDetails.GENDER_CHOICES, write_only=True)
 
     # Additional fields
     contact = serializers.CharField(write_only=True, required=False, allow_blank=True)
@@ -227,7 +227,6 @@ class StudentCreateSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
     first_name = serializers.CharField(write_only=True)
     last_name = serializers.CharField(write_only=True)
-    gender = serializers.ChoiceField(choices=UserDetails.GENDER_CHOICES, write_only=True)
 
     GradeId = serializers.CharField(write_only=True)  # Accepting name instead of pk
     DivisionId = serializers.CharField(write_only=True)  # Accepting name instead of pk
