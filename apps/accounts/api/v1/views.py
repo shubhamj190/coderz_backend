@@ -116,6 +116,14 @@ def UniversalAuthenticator(request):
                 register_role_data.save()
             # authenticate user ang generate token for python
             user = authenticate(username=username, password=password)
+            userIdentity=UsersIdentity.objects.filter(
+                UserName=username, IsActive=True, IsDeleted=False)
+            if userIdentity.exists():
+                userIdentity=userIdentity.first()
+                userdetails=UserDetails.objects.filter(
+                    UserId=userIdentity.UserId, IsActive=True, IsDeleted=False)
+                if userdetails.exists():
+                    userdetails=userdetails.first().UserType
             if user is None:
                 return create_response("Invalid login credentials")
             if platform==0:
@@ -139,6 +147,7 @@ def UniversalAuthenticator(request):
                 "id": user.id,
                 "token": {"refresh": str(Token), "access": str(Token.access_token)},
                 "DotNetAuth": authenticated_data,
+                "user_type": userdetails
             }
 
             # if the user is authenicated get their role details
