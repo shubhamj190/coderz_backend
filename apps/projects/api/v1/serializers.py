@@ -5,12 +5,12 @@ from django.contrib.auth import get_user_model
 
 from apps.accounts.models.grades import Division, Grade
 from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserGroup
+from apps.accounts.models.user import UsersIdentity as User
 from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz, ReflectiveQuizSubmission
 from apps.projects.utils import get_teacher_for_grade_division
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 
-User = get_user_model()
 
 class ProjectAssetSerializer(serializers.ModelSerializer):
     file_url = serializers.SerializerMethodField()
@@ -208,7 +208,6 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
         group = GroupMaster.objects.filter(GroupName=group_name).first()
         if not group:
             raise serializers.ValidationError("No group found for the given grade and division.")
-
         group_teacher = TeacherLocationDetails.objects.filter(GroupId=group.GroupId).first().UserId
         assigned_teacher = User.objects.filter(UserId=group_teacher).first()
         if not assigned_teacher:

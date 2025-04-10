@@ -24,7 +24,7 @@ User = get_user_model()
 class ClassroomProjectCreateView(CreateAPIView):
     queryset = ClassroomProject.objects.all()
     serializer_class = ClassroomProjectSerializer
-    permission_classes = [IsSpecificAdmin, IsSpecificTeacher]  # Optional: Require authentication
+    permission_classes = [IsSpecificTeacher]  # Optional: Require authentication
     
 class ClassroomProjectListView(ListAPIView):
     queryset = ClassroomProject.objects.all()
