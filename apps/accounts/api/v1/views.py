@@ -173,6 +173,7 @@ def UniversalUsernameLoginAuthenticator(request):
         with transaction.atomic():
             data = request.data
             username = data.get("username")
+            username = base64.b64decode(username).decode()
             qust_redirect = data.get("qustRedirect", False)
 
             if not username:
