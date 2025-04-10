@@ -37,7 +37,7 @@ class ClassroomProjectRetrieveUpdateView(RetrieveUpdateAPIView):
     queryset = ClassroomProject.objects.all()
     serializer_class = ClassroomProjectSerializer
     parser_classes = (MultiPartParser, FormParser)  # Supports file uploads
-    permission_classes = [IsSpecificAdmin, IsSpecificTeacher]  # Optional authentication
+    permission_classes = [IsSpecificTeacher]  # Optional authentication
 
     def get_object(self):
         """
