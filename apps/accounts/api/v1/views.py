@@ -63,7 +63,7 @@ def UniversalAuthenticator(request):
             data = seralizer.data
             username = data.get("username")
             password = data.get("password")
-            password = decrypt_AES_CBC(password)
+            # password = decrypt_AES_CBC(password)
             platform = data.get("platform")
             isLogger = data.get("isLogger")
             moduleName = data.get("moduleName")
@@ -141,7 +141,7 @@ def UniversalAuthenticator(request):
             Token["id"] = user.id
             Token["username"] = user.username
             Token["cid"]=cid
-
+            print(user,"22222222222222")
             payload = {
                 "username": user.username,
                 "id": user.id,
@@ -166,6 +166,88 @@ def UniversalAuthenticator(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def UniversalUsernameLoginAuthenticator(request):
+    try:
+        with transaction.atomic():
+            data = request.data
+            username = data.get("username")
+            qust_redirect = data.get("qustRedirect", False)
+
+            if not username:
+                return create_response("Username is required", status=status.HTTP_400_BAD_REQUEST)
+
+            # Check UserMaster
+            user = UserMaster.objects.filter(username=username, IsDeleted=False).first()
+
+            if not user:
+                # Check UsersIdentity
+                user_data = UsersIdentity.objects.filter(
+                    UserName=username, IsActive=True, IsDeleted=False
+                ).values().first()
+
+                if not user_data:
+                    return create_response("User not found", status=status.HTTP_404_NOT_FOUND)
+
+                # Register user in Django
+                user_data["username"] = username
+                user_data["password"] = UserMaster.objects.make_random_password()  # dummy password
+                registered_user, user_instance = registerUser(user_data)
+
+                if registered_user.status_code != 201:
+                    return registered_user
+
+                user = user_instance
+
+                # Register role
+                role_data = UserRoles.objects.filter(UserId=user_data.get("UserId")).values_list("RoleId__Id", flat=True)
+                role = RolesV2.objects.get(Id=role_data[0]) if role_data else None
+
+                if role:
+                    UserRoles.objects.create(UserId=user, RoleId=role)
+
+            # Extract user_type
+            user_type = None
+            user_identity = UsersIdentity.objects.filter(UserName=username, IsActive=True, IsDeleted=False).first()
+            if user_identity:
+                user_details = UserDetails.objects.filter(UserId=user_identity.UserId, IsActive=True, IsDeleted=False).first()
+                if user_details:
+                    user_type = user_details.UserType
+
+            # Generate dummy cid for compatibility
+            cid = str(user_identity.UserId) if user_identity else "NA"
+
+            # Generate token
+            token = RefreshToken.for_user(user)
+            token["id"] = user.id
+            token["username"] = user.username
+            token["cid"] = cid
+
+            payload = {
+                "username": user.username,
+                "id": user.id,
+                "token": {
+                    "refresh": str(token),
+                    "access": str(token.access_token)
+                },
+                "qustRedirect": qust_redirect,
+                "user_type": user_type,
+                "cid": cid,
+            }
+
+            return create_response(
+                message="User Authenticated Successfully",
+                status=status.HTTP_202_ACCEPTED,
+                payload=payload,
+            )
+
+    except Exception as e:
+        logging.exception(e)
+        return create_response(
+            message="User Authentication Failed",
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 class StudentSSOLoginView(APIView):
     def post(self, request, mission_name=None):

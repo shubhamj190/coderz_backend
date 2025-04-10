@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-nja0v9bvnl&z0^cbvdu)t(_w%inn@7b-@13kjysq)3h7)&dd(c'
+SECRET_KEY = 'sqxxvx=ik(#s@!)h*it5*@6^nck$4obi#%uxa9#=197d=pur74'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True

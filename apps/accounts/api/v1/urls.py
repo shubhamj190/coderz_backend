@@ -6,6 +6,7 @@ from .views import (
     AdminChangePasswordView,
     AdminSignupView,
     BulkUploadStudentsAPIView,
+    UniversalUsernameLoginAuthenticator,
     DivisionListCreateAPIView,
     DivisionRetrieveUpdateDestroyAPIView,
     GradeDivisionMappingAPIView,
@@ -26,6 +27,7 @@ from .views import (
 urlpatterns = [
     # auth endpoints
     path('login/', UniversalAuthenticator, name='login'),
+    path('student-login/', UniversalUsernameLoginAuthenticator, name='decode-student-login'),
     path('student/sso-login/', StudentSSOLoginView.as_view(), name='student_sso_login'),
     path('logout/', UnifiedLogoutView.as_view(), name='logout'),
     path('forgot-password/', UnifiedForgotPasswordAPIView.as_view(), name='forgot-password'),
