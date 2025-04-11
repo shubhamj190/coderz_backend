@@ -85,9 +85,28 @@ class TeacherClassroomProjectSerializer(serializers.ModelSerializer):
     assets = StudentAndTeacherProjectAssetSerializer(many=True, read_only=True)
     quizzes = StudentAndTeacherReflectiveQuizSerializer(many=True, read_only=True)
 
+    grade_name = serializers.SerializerMethodField()
+    division_name = serializers.SerializerMethodField()
+
     class Meta:
         model = ClassroomProject
-        fields = ["id", "title", "description", "assets", "quizzes"]
+        fields = [
+            'id', 'title', 'description', 'grade', 'division', 'assigned_teacher', 
+            'thumbnail', 'due_date', 'assets', 'quizzes',
+            'grade', 'division', 'grade_name', 'division_name','thumbnail'  # Include custom fields
+        ]
+
+    # Fetch grade name
+    def get_grade_name(self, obj):
+        if obj.grade:
+            grade=Grade.objects.filter(GradeId=obj.grade.GradeId).first()
+            return grade.GradeName if grade else None
+        return None
+
+    # Fetch division name
+    def get_division_name(self, obj):
+        division = Division.objects.filter(DivisionId=obj.division.DivisionId).first()
+        return division.DivisionName if division else None
 
 class ReflectiveQuizSubmissionSerializer(serializers.ModelSerializer):
     class Meta:
