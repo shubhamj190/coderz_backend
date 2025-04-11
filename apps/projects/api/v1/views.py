@@ -48,7 +48,7 @@ class ClassroomProjectRetrieveUpdateView(RetrieveUpdateAPIView):
 
 class ProjectAssetCreateView(CreateAPIView):
     serializer_class = ProjectAssetSerializer
-    permission_classes = [IsSpecificAdmin, IsSpecificTeacher]
+    permission_classes = [IsSpecificTeacher]
 
     def post(self, request, project_id, *args, **kwargs):
         try:
@@ -81,7 +81,7 @@ class ProjectAssetCreateView(CreateAPIView):
 class RetrieveUpdateProjectAssetsView(RetrieveUpdateAPIView):
     queryset = ClassroomProject.objects.all()
     serializer_class = UpdateProjectAssetsSerializer
-    permission_classes = [IsSpecificAdmin, IsSpecificTeacher]
+    permission_classes = [IsSpecificTeacher]
     lookup_field = "pk"
 
     def get(self, request, *args, **kwargs):
@@ -102,7 +102,7 @@ class RetrieveUpdateProjectAssetsView(RetrieveUpdateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 class ReflectiveQuizCreateView(CreateAPIView):
     serializer_class = ReflectiveQuizSerializer
-    permission_classes = [IsSpecificAdmin, IsSpecificTeacher]
+    permission_classes = [IsSpecificTeacher]
 
     def post(self, request, project_id, *args, **kwargs):
         """
@@ -131,7 +131,7 @@ class ReflectiveQuizReplaceAPIView(APIView):
     Supports multiple quizzes in a single request.
     """
     serializer_class = ReflectiveQuizSerializer
-    permission_classes = [IsSpecificAdmin, IsSpecificTeacher]
+    permission_classes = [IsSpecificTeacher]
 
     def post(self, request, project_id, *args, **kwargs):
         # Fetch project instance
@@ -177,7 +177,7 @@ class CreateProjectSessionView(APIView):
     API to create a Project Session. 
     Only Admins and Teachers can create sessions.
     """
-    permission_classes = [IsSpecificAdmin, IsSpecificTeacher]  
+    permission_classes = [IsSpecificTeacher]  
     parser_classes = [MultiPartParser, FormParser]  # To handle file uploads
 
     def post(self, request, *args, **kwargs):
@@ -197,7 +197,7 @@ class UpdateProjectSessionView(APIView):
     API to update a Project Session. 
     Only Admins and Teachers can update sessions.
     """
-    permission_classes = [IsSpecificAdmin, IsSpecificTeacher]
+    permission_classes = [IsSpecificTeacher]
     parser_classes = [MultiPartParser, FormParser]  # To handle file uploads
 
     def put(self, request, session_id, *args, **kwargs):
