@@ -53,24 +53,23 @@ def UniversalAuthenticator(request):
     try:
         with transaction.atomic():
             # {payload:{},Platform:0,1,2}
-            data = request.data
-            data = data.get("payload")
-            seralizer = UniversalAuthenticateUserSeralizer(data=data)
-            if not seralizer.is_valid():
-                return create_response(
-                    seralizer.errors, status=status.HTTP_400_BAD_REQUEST
-                )
-            data = seralizer.data
-            username = data.get("username")
-            password = data.get("password")
+            # data = request.data
+            # data = data.get("payload")
+            # seralizer = UniversalAuthenticateUserSeralizer(data=data)
+            # if not seralizer.is_valid():
+            #     return create_response(
+            #         seralizer.errors, status=status.HTTP_400_BAD_REQUEST
+            #     )
+            # data = seralizer.data
+            username = request.data.get("UserName")
+            password = request.data.get("password")
             # password = decrypt_AES_CBC(password)
-            platform = data.get("platform")
-            isLogger = data.get("isLogger")
-            moduleName = data.get("moduleName")
-            eventName = data.get("eventName")
-            dataId = data.get("dataId")
-            DeviceId = data.get("DeviceId")
-
+            platform = 2
+            isLogger = True
+            moduleName = 'Auth'
+            eventName = "Login"
+            dataId = ""
+            DeviceId = None
             # verify  which api should be called
             Success, authenticated_data = UniversalAuthenticationHandeler(
                 username=username,
