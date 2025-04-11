@@ -204,14 +204,9 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
         group_name = f"{grade.GradeName} - {division.DivisionName}"
         print(group_name)
 
-        # Fetch group and teacher
         group = GroupMaster.objects.filter(GroupName=group_name).first()
         if not group:
             raise serializers.ValidationError("No group found for the given grade and division.")
-        group_teacher = TeacherLocationDetails.objects.filter(GroupId=group.GroupId).first().UserId
-        assigned_teacher = User.objects.filter(UserId=group_teacher).first()
-        if not assigned_teacher:
-            raise serializers.ValidationError("No assigned teacher found for the given group.")
 
         classroom_project = ClassroomProject.objects.create(
             title=validated_data['title'],
@@ -221,10 +216,11 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
             thumbnail=validated_data.get('thumbnail'),
             due_date=validated_data['due_date'],
             group=group,
-            assigned_teacher=assigned_teacher
+            assigned_teacher=validated_data['assigned_teacher']
         )
 
         return classroom_project
+
     
 class ProjectSubmissionEvaluationSerializer(serializers.ModelSerializer):
     class Meta:
