@@ -146,7 +146,8 @@ def UniversalAuthenticator(request):
                 "id": user.id,
                 "token": {"refresh": str(Token), "access": str(Token.access_token)},
                 "DotNetAuth": authenticated_data,
-                "user_type": userdetails
+                "user_type": userdetails,
+                'cid': cid,
             }
 
             # if the user is authenicated get their role details
