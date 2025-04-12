@@ -18,6 +18,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics
 from django.db import transaction
 from django.db.models import Q
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 User = get_user_model()
 
@@ -412,11 +413,11 @@ class TeacherProjectDetailView(APIView):
             )
 
 class StudentProjectsView(APIView):
-    permission_classes = [IsSpecificStudent]  # Ensure only authenticated students can access
+    permission_classes = [AllowAny]  # Ensure only authenticated students can access
 
     def get(self, request, *args, **kwargs):
-        student = request.user  # Assuming the student is logged in
-        student_identity=UsersIdentity.objects.filter(UserName=student.username).first()
+        student_usermaster = request.user
+        student_identity=UsersIdentity.objects.filter(UserName=student_usermaster.username).first()
         if student_identity is not None:
             student=student_identity
 
@@ -426,12 +427,7 @@ class StudentProjectsView(APIView):
             return Response({"message": "No groups assigned to this student."}, status=status.HTTP_404_NOT_FOUND)
 
         # Fetch projects associated with the student's groups
-        projects = (
-            ClassroomProject.objects
-            .filter(group__GroupId__in=student_groups)
-            .prefetch_related("assets", "quizzes")
-        )
-
+        projects =ClassroomProject.objects.filter(group__GroupId__in=student_groups).prefetch_related("assets", "quizzes")
         project_data = []
         for project in projects:
             # Get quiz submissions for this project
@@ -439,7 +435,6 @@ class StudentProjectsView(APIView):
                 student=student,
                 quiz__in=project.quizzes.all()
             )
-
             # Check if all quizzes are correctly answered
             total_quizzes = project.quizzes.count()
             completed_submissions = submissions.filter(is_correct=True).count()

@@ -22,7 +22,7 @@ class ClassroomProject(models.Model):
     date_modified = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.title} (Grade: {self.grade.GradeName}, Division: {self.division.DivisionName})"
+        return f"{self.title} for {self.group.GroupName})"
 
     class Meta:
         db_table = "ClassroomProject"

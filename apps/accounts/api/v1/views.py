@@ -140,7 +140,6 @@ def UniversalAuthenticator(request):
             Token["id"] = user.id
             Token["username"] = user.username
             Token["cid"]=cid
-            print(user,"22222222222222")
             payload = {
                 "username": user.username,
                 "id": user.id,
