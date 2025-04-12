@@ -374,6 +374,53 @@ class RolesV2(models.Model):
             )  # Unique constraint on RoleId
         ]
 
+class Roles(models.Model):
+    Id = models.IntegerField(db_column="Id", unique=True)
+    RoleId = models.CharField(primary_key=True, max_length=450, db_column="RoleId")
+    Name = models.CharField(
+        max_length=256, unique=True, null=True, blank=True, db_column="Name"
+    )
+    NormalizedName = models.CharField(
+        max_length=256, unique=True, null=True, blank=True, db_column="NormalizedName"
+    )
+    ConcurrencyStamp = models.TextField(
+        null=True, blank=True, db_column="ConcurrencyStamp"
+    )
+    IsActive = models.BooleanField(null=True, blank=True, db_column="IsActive")
+    IsDeleted = models.BooleanField(null=True, blank=True, db_column="IsDeleted")
+    CreatedBy = models.CharField(
+        max_length=50, null=True, blank=True, db_column="CreatedBy"
+    )
+    CreatedOn = models.DateTimeField(null=True, blank=True, db_column="CreatedOn")
+    ModifiedBy = models.CharField(
+        max_length=50, null=True, blank=True, db_column="ModifiedBy"
+    )
+    ModifiedOn = models.DateTimeField(null=True, blank=True, db_column="ModifiedOn")
+
+    class Meta:
+        db_table = "Roles"
+        managed = False
+
+class UserRole(models.Model):
+    UserId = models.ForeignKey(
+        UsersIdentity,
+        on_delete=models.CASCADE,
+        db_column="UserId",
+        related_name="user_role_useridentity",
+    )
+    RoleId = models.ForeignKey(
+        Roles,
+        to_field="RoleId",
+        on_delete=models.CASCADE,
+        db_column="RoleId",
+        related_name="user_role_roles",
+    )
+
+    class Meta:
+        db_table = "UserRole"
+        unique_together = (("UserId", "RoleId"),)
+        managed = False
+
 class UserRoles(models.Model):
     UserId = models.ForeignKey(
         UserMaster,

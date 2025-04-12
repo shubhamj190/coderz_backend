@@ -40,7 +40,7 @@ from .serializers import (
     UniversalAuthenticateUserSeralizer
 )
 
-from apps.accounts.models.user import GroupMaster, RolesV2, TeacherLocationDetails, UserDetails, UserMaster, UserRoles, UsersIdentity
+from apps.accounts.models.user import GroupMaster, RolesV2, TeacherLocationDetails, UserDetails, UserMaster, UserRole, UserRoles, UsersIdentity
 from apps.accounts.models.user import UsersIdentity as User
 
 logger = logging.getLogger(__name__)
@@ -105,7 +105,7 @@ def UniversalAuthenticator(request):
                     return registered_user
                 registered_user = registered_user.data.get("payload")
                 # noe register role
-                role_data = UserRoles.objects.filter(
+                role_data = UserRole.objects.filter(
                     UserId=user_data.get("UserId")
                 ).values_list("RoleId__Id", flat=True)
                 role_data = RolesV2.objects.get(Id=role_data[0])
