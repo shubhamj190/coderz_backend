@@ -630,9 +630,9 @@ class ProjectEvaluationView(APIView):
         except ProjectSubmission.DoesNotExist:
             return Response({'error': 'Submission not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Ensure student can only access their own submission
-        if request.user != submission.student and request.user.details.UserType not in ['Admin','Teacher']:
-            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        # # Ensure student can only access their own submission
+        # if request.user != submission.student and request.user.details.UserType not in ['Admin','Teacher']:
+        #     return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = ProjectSubmissionEvaluationSerializer(submission)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -644,8 +644,8 @@ class ProjectEvaluationView(APIView):
             return Response({'error': 'Submission not found'}, status=status.HTTP_404_NOT_FOUND)
 
         # Only teachers (or staff) can update evaluation
-        if request.user.details.UserType not in ['Admin', 'Teacher']:
-            return Response({'error': 'Only teachers can evaluate projects'}, status=status.HTTP_403_FORBIDDEN)
+        # if request.user.details.UserType not in ['Admin', 'Teacher']:
+        #     return Response({'error': 'Only teachers can evaluate projects'}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = ProjectSubmissionEvaluationSerializer(submission, data=request.data, partial=True)
         if serializer.is_valid():
