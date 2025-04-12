@@ -13,7 +13,7 @@ from apps.accounts.models.grades import Division, Grade, GradeDivisionMapping
 from apps.accounts.tasks import process_bulk_upload_students
 from apps.accounts.utils import UniversalAuthenticationHandeler, create_response, decrypt_AES_CBC, registerUser, user_name_creator
 from core.middlewares.global_pagination import StandardResultsSetPagination
-from core.permissions.role_based import IsSpecificAdmin
+from core.permissions.role_based import IsSpecificAdmin, IsSpecificTeacher
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
@@ -40,7 +40,7 @@ from .serializers import (
     UniversalAuthenticateUserSeralizer
 )
 
-from apps.accounts.models.user import GroupMaster, RolesV2, UserDetails, UserMaster, UserRoles, UsersIdentity
+from apps.accounts.models.user import GroupMaster, RolesV2, TeacherLocationDetails, UserDetails, UserMaster, UserRoles, UsersIdentity
 from apps.accounts.models.user import UsersIdentity as User
 
 logger = logging.getLogger(__name__)
@@ -740,32 +740,20 @@ class BulkUploadStudentsAPIView(APIView):
         return Response({"message": "Bulk upload initiated.", "task_id": "task.id"}, status=status.HTTP_202_ACCEPTED)
     
 class GradeDivisionMappingAPIView(APIView):
+    permission_classes = [IsSpecificTeacher]
     
     def get(self, request):
         """
         Fetch all grade-division mappings with required response structure.
         """
-        grades = Grade.objects.prefetch_related(
-            Prefetch(
-                'grade_division_mappings',
-                queryset=GradeDivisionMapping.objects.select_related('Division'),
-                to_attr='divisions_list'
-            )
+        teacher_user_master = request.user
+        teacher_identity = UsersIdentity.objects.filter(UserName=teacher_user_master.username).first()
+        teacher_location_detials = TeacherLocationDetails.objects.filter(UserId=teacher_identity.UserId, IsDeleted=False).values('GID__GroupName','LID__LocationName', 'GroupId', 'LocationId')
+        return Response(
+            {
+                'group_names': list(teacher_location_detials),
+            }
         )
-
-        response_data = []
-        for grade in grades:
-            divisions = [mapping.Division.DivisionName for mapping in grade.divisions_list]
-            response_data.append({
-                "id": grade.id,
-                "class": str(grade.GradeId),
-                "status": 1,
-                "grade": grade.GradeName,
-                "class_name": grade.GradeName,
-                "divisions": ",".join(divisions)
-            })
-
-        return Response(response_data, status=status.HTTP_200_OK)
 
     
     def post(self, request):
