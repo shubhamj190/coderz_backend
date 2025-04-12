@@ -25,6 +25,7 @@ class ClassroomProjectCreateView(CreateAPIView):
     queryset = ClassroomProject.objects.all()
     serializer_class = ClassroomProjectSerializer
     permission_classes = [IsSpecificTeacher]
+    parser_classes = (MultiPartParser, FormParser)  # Supports file uploads 
 
     def perform_create(self, serializer):
         user_identity = UsersIdentity.objects.filter(UserName=self.request.user.username).first()

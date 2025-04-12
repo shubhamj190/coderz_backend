@@ -170,68 +170,33 @@ class ProjectSubmissionSerializer(serializers.ModelSerializer):
         return user_group.GID.GroupName.split("-")[1].strip() if user_group and user_group.GID else None
 
 class ClassroomProjectSerializer(serializers.ModelSerializer):
-    thumbnail = serializers.FileField(required=False)
+    thumbnail = serializers.FileField(required=True)
     due_date = serializers.DateField(format="%Y-%m-%d", input_formats=["%Y-%m-%d"])
     assets = StudentAndTeacherProjectAssetSerializer(many=True, read_only=True)
     quizzes = ReflectiveQuizSerializer(many=True, read_only=True)
     submitted_quizzes = ReflectiveQuizSubmissionSerializer(many=True, read_only=True)
+    group = serializers.CharField(write_only=True)
 
-    # Custom fields for GET request
-    grade_name = serializers.SerializerMethodField()
-    division_name = serializers.SerializerMethodField()
 
     class Meta:
         model = ClassroomProject
         fields = [
-            'id', 'title', 'description', 'grade', 'division', 'assigned_teacher', 
-            'thumbnail', 'due_date', 'assets', 'quizzes', 'submitted_quizzes',
-            'grade_name', 'division_name'  # Include custom fields
+            'id', 'title', 'description', 'assigned_teacher', 
+            'thumbnail', 'due_date', 'assets', 'quizzes', 'submitted_quizzes','group'
         ]
 
-    # Method to retrieve grade name
-    def get_grade_name(self, obj):
-        return obj.grade.GradeName if obj.grade else None
-
-    # Method to retrieve division name
-    def get_division_name(self, obj):
-        return obj.division.DivisionName if obj.division else None
-
-    def to_internal_value(self, data):
-        data = data.copy()
-
-        grade_name = data.get('grade')
-        division_name = data.get('division')
-
-        # Fetch Grade and Division objects using names
-        grade = Grade.objects.filter(GradeName=grade_name).first()
-        division = Division.objects.filter(DivisionName=division_name).first()
-
-        if not grade:
-            raise serializers.ValidationError({"grade": "Invalid grade name provided."})
-        if not division:
-            raise serializers.ValidationError({"division": "Invalid division name provided."})
-
-        # Replace names with actual objects
-        data['grade'] = grade.id
-        data['division'] = division.DivisionId
-
-        return super().to_internal_value(data)
 
     def create(self, validated_data):
-        grade = validated_data['grade']
-        division = validated_data['division']
-        group_name = f"{grade.GradeName} - {division.DivisionName}"
-        print(group_name)
-
-        group = GroupMaster.objects.filter(GroupName=group_name).first()
+        group = validated_data.get('group')
+        group = GroupMaster.objects.filter(GroupId=group).first()
         if not group:
             raise serializers.ValidationError("No group found for the given grade and division.")
 
         classroom_project = ClassroomProject.objects.create(
             title=validated_data['title'],
             description=validated_data['description'],
-            grade=grade,
-            division=division,
+            grade=None,
+            division=None,
             thumbnail=validated_data.get('thumbnail'),
             due_date=validated_data['due_date'],
             group=group,
