@@ -4,7 +4,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
 from apps.accounts.models.grades import Division, Grade
-from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserGroup
+from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserDetails, UserGroup
 from apps.accounts.models.user import UsersIdentity as User
 from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz, ReflectiveQuizSubmission
 from apps.projects.utils import get_teacher_for_grade_division
@@ -155,33 +155,21 @@ class ProjectSessionUpdateSerializer(serializers.ModelSerializer):
 
 class ProjectSubmissionSerializer(serializers.ModelSerializer):
     student_name = serializers.SerializerMethodField()
-    grade_name = serializers.SerializerMethodField()
-    division_name = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectSubmission
-        fields = ["id", "project", "student", "submission_file", "submitted_at", "feedback", "student_name", "grade_name","division_name","teacher_evaluation", "teacher",]
+        fields = ["id", "project", "student", "submission_file", "submitted_at", "feedback", "student_name","teacher_evaluation", "teacher",]
         read_only_fields = ["submitted_at"]
 
     # Fetch student's full name
     def get_student_name(self, obj):
-        return f"{obj.student.FirstName} {obj.student.LastName}"
+        uder_details = UserDetails.objects.filter(UserId=obj.student.UserId).first()
+        return f"{uder_details.FirstName} {uder_details.LastName}"
     
     # Fetch student's full name
     def get_teacher_name(self, obj):
-        return f"{obj.teacher.FirstName} {obj.teacher.LastName}"
-
-    # Fetch grade name
-    def get_grade_name(self, obj):
-        if obj.student.GradeId:
-            grade=Grade.objects.filter(GradeId=obj.student.GradeId).first()
-            return grade.GradeName if grade else None
-        return None
-
-    # Fetch division name
-    def get_division_name(self, obj):
-        user_group = UserGroup.objects.filter(user=obj.student.user).first()
-        return user_group.GID.GroupName.split("-")[1].strip() if user_group and user_group.GID else None
+        uder_details = UserDetails.objects.filter(UserId=obj.teacher.UserId).first()
+        return f"{uder_details.FirstName} {uder_details.LastName}"
 
 class ClassroomProjectSerializer(serializers.ModelSerializer):
     thumbnail = serializers.FileField(required=True)

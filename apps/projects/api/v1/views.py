@@ -261,27 +261,18 @@ class ProjectSubmissionCreateView(APIView):
     API for students to submit project files.
     Only authenticated students can submit.
     """
+    permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser]
-    permission_classes = [IsSpecificStudent]
 
     def post(self, request, *args, **kwargs):
-        """
-        Handle project submission.
-        """
-        student = request.user  # Get logged-in student
-        student_identity=UsersIdentity.objects.filter(UserName=student.username).first()
+        student = request.user
+        student_identity = UsersIdentity.objects.filter(UserName=student.username).first()
         if student_identity is not None:
-            student=student_identity
+            student = student_identity
 
-        # Ensure student role is valid
-        if not hasattr(student, 'role') or student.role != 'Learner':
-            return Response(
-                {"error": "Only students can submit projects."},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        project_id = request.data.get("project")
 
         # Validate project exists
-        project_id = request.data.get("project")
         try:
             project = ClassroomProject.objects.get(id=project_id)
         except ClassroomProject.DoesNotExist:
@@ -290,13 +281,27 @@ class ProjectSubmissionCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        # 🚫 Check for existing submission
+        existing_submission = ProjectSubmission.objects.filter(
+            student=student.UserId,
+            project=project
+        ).first()
+
+        if existing_submission:
+            return Response(
+                {"error": "You have already submitted this project."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # Create submission
         data = {
             "project": project.id,
-            "student": student.id,
+            "student": student.UserId,
             "submission_file": request.FILES.get("submission_file"),
             "feedback": request.data.get("feedback"),
+            "teacher": project.assigned_teacher.UserId
         }
+
         serializer = ProjectSubmissionSerializer(data=data)
 
         if serializer.is_valid():
@@ -307,6 +312,7 @@ class ProjectSubmissionCreateView(APIView):
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     
 class ProjectSubmissionListView(ListAPIView):
     serializer_class = ProjectSubmissionSerializer
@@ -315,19 +321,19 @@ class ProjectSubmissionListView(ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        user_type = user.details.UserType
+        user_identity = UsersIdentity.objects.filter(UserName=user.username).first()
+        user_details = UserDetails.objects.filter(UserId=user_identity.UserId).first()
+        user_type = user_details.UserType
 
         # Get query params
         faculty_id = self.request.query_params.get('faculty')
-        division = self.request.query_params.get('division')
         pending = self.request.query_params.get('pending')
 
         queryset = ProjectSubmission.objects.all()
-
         if user_type == "Admin":
             pass  # Keep full queryset
         elif user_type == "Teacher":
-            group_teacher = TeacherLocationDetails.objects.filter(UserId=user.UserId).values_list('GID_id', flat=True)
+            group_teacher = TeacherLocationDetails.objects.filter(UserId=user_identity.UserId).values_list('GID_id', flat=True)
             projects = ClassroomProject.objects.filter(group__GID__in=group_teacher)
             queryset = queryset.filter(project__in=projects)
         elif user_type == "Learner":
@@ -337,13 +343,10 @@ class ProjectSubmissionListView(ListAPIView):
 
         # Apply filters
         if faculty_id:
-            queryset = queryset.filter(project__faculty__UserId=faculty_id)
-
-        if division:
-            queryset = queryset.filter(student__Division=division)
+            queryset = queryset.filter(project__teacher__UserId=faculty_id)
 
         if pending == 'true':
-            queryset = queryset.filter(Q(teacher_evaluation__isnull=True) | Q(teacher_evaluation=""))
+            queryset = queryset.filter(Q(teacher_evaluation__isnull=True))
 
         return queryset
 
@@ -475,7 +478,7 @@ class StudentProjectsView(APIView):
         return Response(project_data, status=status.HTTP_200_OK)
     
 class StudentProjectDetailView(APIView):
-    permission_classes = [IsSpecificStudent]
+    permission_classes = [AllowAny]
 
     def get(self, request, project_id, *args, **kwargs):
         student = request.user  # Assuming `request.user` is a Student

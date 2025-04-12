@@ -105,12 +105,12 @@ class ProjectSubmission(models.Model):
         related_name='submissions'
     )
     student = models.ForeignKey(
-        'accounts.UserDetails', 
+        'accounts.UsersIdentity', 
         on_delete=models.CASCADE, 
-        related_name='project_submissions'
+        related_name='project_submissions_student'
     )
     teacher = models.ForeignKey(
-        'accounts.UserDetails', 
+        'accounts.UsersIdentity', 
         on_delete=models.CASCADE, 
         related_name='project_submissions_teacher'
     )
