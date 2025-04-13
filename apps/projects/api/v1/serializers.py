@@ -77,13 +77,19 @@ class StudentAndTeacherProjectAssetSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectAsset
         fields = ["id", "file", "file_type", "uploaded_at"]
+class TeacherReflectiveQuizSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReflectiveQuiz
+        fields = ["id", "question", "options", "multiselect", 'answers']
+
+
 class StudentAndTeacherReflectiveQuizSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReflectiveQuiz
         fields = ["id", "question", "options", "multiselect"]
 class TeacherClassroomProjectSerializer(serializers.ModelSerializer):
     assets = StudentAndTeacherProjectAssetSerializer(many=True, read_only=True)
-    quizzes = StudentAndTeacherReflectiveQuizSerializer(many=True, read_only=True)
+    quizzes = TeacherReflectiveQuizSerializer(many=True, read_only=True)
     groupName = serializers.SerializerMethodField()
     groupId = serializers.SerializerMethodField()
 
@@ -125,7 +131,7 @@ class ReflectiveQuizSubmissionSerializer(serializers.ModelSerializer):
 
 class StudentClassroomProjectSerializer(serializers.ModelSerializer):
     assets = StudentAndTeacherProjectAssetSerializer(many=True, read_only=True)
-    quizzes = StudentAndTeacherReflectiveQuizSerializer(many=True, read_only=True)
+    quizzes = StudentAndTeacherProjectAssetSerializer(many=True, read_only=True)
     submitted_quizzes = ReflectiveQuizSubmissionSerializer(many=True, read_only=True)
     groupId = serializers.SerializerMethodField()
     groupName = serializers.SerializerMethodField()
