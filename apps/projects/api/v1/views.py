@@ -477,6 +477,7 @@ class StudentProjectsView(APIView):
             project_info = serializer.data
             project_info['submitted_quizzes'] = submission_data
             project_info['is_completed'] = is_completed
+            project_info['project_submission'] = ProjectSubmissionSerializer(project_submission).data if project_submission else None
 
             project_data.append(project_info)
 
@@ -519,15 +520,18 @@ class StudentProjectDetailView(APIView):
             quiz__in=project.quizzes.all()
         )
 
-        # Check completion status
-        total_quizzes = project.quizzes.count()
-        completed_submissions = submissions.filter(is_correct=True).count()
-        is_completed = completed_submissions == total_quizzes
+        # Check if all quizzes are correctly answered
+        project_submission = ProjectSubmission.objects.filter(student=student, project=project).first()
+        if project_submission:
+            is_completed = True
+        else:
+            is_completed = False
 
         # Serialize project data
         project_info = StudentClassroomProjectSerializer(project).data
         project_info['submitted_quizzes'] = ReflectiveQuizSubmissionSerializer(submissions, many=True).data
         project_info['is_completed'] = is_completed
+        project_info['project_submission'] = ProjectSubmissionSerializer(project_submission).data if project_submission else None
 
         return Response(project_info, status=status.HTTP_200_OK)     
 
