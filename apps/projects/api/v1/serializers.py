@@ -216,6 +216,21 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
         )
 
         return classroom_project
+    
+    def update(self, instance, validated_data):
+        group = validated_data.get('group')
+        group = GroupMaster.objects.filter(GroupId=group).first()
+        if not group:
+            raise serializers.ValidationError("No group found for the given grade and division.")
+
+        instance.title = validated_data.get('title', instance.title)
+        instance.description = validated_data.get('description', instance.description)
+        instance.thumbnail = validated_data.get('thumbnail', instance.thumbnail)
+        instance.due_date = validated_data.get('due_date', instance.due_date)
+        instance.group = group
+        instance.save()
+
+        return instance
 
     
 class ProjectSubmissionEvaluationSerializer(serializers.ModelSerializer):
