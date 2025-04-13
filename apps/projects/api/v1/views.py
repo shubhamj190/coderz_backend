@@ -337,7 +337,7 @@ class ProjectSubmissionListView(ListAPIView):
             projects = ClassroomProject.objects.filter(group__GID__in=group_teacher)
             queryset = queryset.filter(project__in=projects)
         elif user_type == "Learner":
-            queryset = queryset.filter(student=user.details)
+            queryset = queryset.filter(student=user_identity)
         else:
             return ProjectSubmission.objects.none()
 
