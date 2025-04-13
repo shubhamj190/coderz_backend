@@ -349,7 +349,7 @@ class ProjectSubmissionListView(ListAPIView):
             queryset = queryset.filter(Q(teacher_evaluation__isnull=True))
 
         if pending == 'false':
-            queryset = queryset.filter(Q(teacher_evaluation__isnull=False))
+            queryset = queryset
 
         return queryset
 
