@@ -84,16 +84,19 @@ class StudentAndTeacherReflectiveQuizSerializer(serializers.ModelSerializer):
 class TeacherClassroomProjectSerializer(serializers.ModelSerializer):
     assets = StudentAndTeacherProjectAssetSerializer(many=True, read_only=True)
     quizzes = StudentAndTeacherReflectiveQuizSerializer(many=True, read_only=True)
+    groupName = serializers.SerializerMethodField()
 
-    grade_name = serializers.SerializerMethodField()
-    division_name = serializers.SerializerMethodField()
+    def get_groupName(self, obj):
+        user_group = UserGroup.objects.filter(GroupId=obj.group.GroupId).first()
+        if user_group:
+            return user_group.GID.GroupName
+        return None
 
     class Meta:
         model = ClassroomProject
         fields = [
-            'id', 'title', 'description', 'grade', 'division', 'assigned_teacher', 
-            'thumbnail', 'due_date', 'assets', 'quizzes',
-            'grade', 'division', 'grade_name', 'division_name','thumbnail'  # Include custom fields
+            'id', 'title', 'description', 'assigned_teacher', 
+            'thumbnail', 'due_date', 'assets', 'quizzes','thumbnail','groupName'  # Include custom fields
         ]
 
     # Fetch grade name
