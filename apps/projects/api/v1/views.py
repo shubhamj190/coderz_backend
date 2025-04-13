@@ -439,9 +439,11 @@ class StudentProjectsView(APIView):
                 quiz__in=project.quizzes.all()
             )
             # Check if all quizzes are correctly answered
-            total_quizzes = project.quizzes.count()
-            completed_submissions = submissions.filter(is_correct=True).count()
-            is_completed = completed_submissions == total_quizzes
+            project_submission = ProjectSubmission.objects.filter(student=student, project=project).first()
+            if project_submission:
+                is_completed = True
+            else:
+                is_completed = False
 
             # Prepare submission data with additional options
             submission_data = []
