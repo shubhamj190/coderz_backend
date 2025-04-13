@@ -131,7 +131,7 @@ class ReflectiveQuizSubmissionSerializer(serializers.ModelSerializer):
 
 class StudentClassroomProjectSerializer(serializers.ModelSerializer):
     assets = StudentAndTeacherProjectAssetSerializer(many=True, read_only=True)
-    quizzes = StudentAndTeacherProjectAssetSerializer(many=True, read_only=True)
+    quizzes = StudentAndTeacherReflectiveQuizSerializer(many=True, read_only=True)
     submitted_quizzes = ReflectiveQuizSubmissionSerializer(many=True, read_only=True)
     groupId = serializers.SerializerMethodField()
     groupName = serializers.SerializerMethodField()
