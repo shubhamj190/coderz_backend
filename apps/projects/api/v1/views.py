@@ -596,7 +596,7 @@ class ReflectiveQuizSubmissionView(APIView):
                     "selected_options": selected_values,
                     "is_correct": is_correct,
                     "correct_answers": correct_values,
-                    "all_options": [{key: value} for key, value in quiz.options.items()],
+                    "all_options": [{"index": key, "value": value} for key, value in quiz.options.items()],
                 })
 
             except ReflectiveQuiz.DoesNotExist:
