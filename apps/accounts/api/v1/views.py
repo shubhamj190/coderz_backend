@@ -122,7 +122,8 @@ def UniversalAuthenticator(request):
                 userdetails=UserDetails.objects.filter(
                     UserId=userIdentity.UserId, IsActive=True, IsDeleted=False)
                 if userdetails.exists():
-                    userdetails=userdetails.first().UserType
+                    userdetails=userdetails.first()
+                    usertype=userdetails.UserType
             if user is None:
                 return create_response("Invalid login credentials")
             if platform==0:
@@ -145,8 +146,9 @@ def UniversalAuthenticator(request):
                 "id": user.id,
                 "token": {"refresh": str(Token), "access": str(Token.access_token)},
                 "DotNetAuth": authenticated_data,
-                "user_type": userdetails,
+                "user_type": usertype,
                 'cid': cid,
+                'name':f"{userdetails.FirstName} {userdetails.LastName}"
             }
 
             # if the user is authenicated get their role details
@@ -234,6 +236,7 @@ def UniversalUsernameLoginAuthenticator(request):
                 "qustRedirect": qust_redirect,
                 "user_type": user_type,
                 "cid": cid,
+                'name':f"{user_details.FirstName} {user_details.LastName}"
             }
 
             return create_response(
