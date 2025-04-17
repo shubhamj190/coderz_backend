@@ -201,9 +201,8 @@ def UniversalUsernameLoginAuthenticator(request):
                     return registered_user
 
                 user = user_instance
-
                 # Register role
-                role_data = UserRoles.objects.filter(UserId=user_data.get("UserId")).values_list("RoleId__Id", flat=True)
+                role_data = UserRole.objects.filter(UserId=user_data.get("UserId")).values_list("RoleId__Id", flat=True)
                 role = RolesV2.objects.get(Id=role_data[0]) if role_data else None
 
                 if role:
