@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from django.http import JsonResponse
 from django.contrib.auth import get_user_model
 from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserDetails, UserGroup, UsersIdentity
-from apps.projects.api.v1.serializers import ClassroomProjectSerializer, ProjectAssetSerializer, ProjectSessionSerializer, ProjectSessionUpdateSerializer, ProjectSubmissionEvaluationSerializer, ProjectSubmissionSerializer, ReflectiveQuizSerializer, ReflectiveQuizSubmissionSerializer, StudentClassroomProjectSerializer, TeacherClassroomProjectSerializer, UpdateProjectAssetsSerializer
+from apps.projects.api.v1.serializers import  *
 from apps.projects.models.projects import ClassroomProject, ProjectAsset, ProjectSession, ProjectSubmission, ReflectiveQuiz, ReflectiveQuizSubmission
 from core.middlewares.global_pagination import StandardResultsSetPagination
 from core.permissions.role_based import IsAdminOrTeacher, IsAdminTeacherStudent, IsSpecificStudent, IsSpecificAdmin, IsSpecificTeacher
@@ -272,6 +272,8 @@ class ProjectSubmissionCreateView(APIView):
 
         project_id = request.data.get("project")
 
+        print("Project ID:", project_id)
+
         # Validate project exists
         try:
             project = ClassroomProject.objects.get(id=project_id)
@@ -315,7 +317,7 @@ class ProjectSubmissionCreateView(APIView):
 
     
 class ProjectSubmissionListView(ListAPIView):
-    serializer_class = ProjectSubmissionSerializer
+    serializer_class = ProjectSubmissionListSerializer
     permission_classes = [IsAdminTeacherStudent]
     pagination_class = StandardResultsSetPagination
 

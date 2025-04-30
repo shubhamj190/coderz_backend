@@ -170,6 +170,7 @@ class ProjectSessionUpdateSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+
 class ClassroomProjectSerializer(serializers.ModelSerializer):
     thumbnail = serializers.FileField(required=True)
     due_date = serializers.DateField(format="%Y-%m-%d", input_formats=["%Y-%m-%d"])
@@ -223,13 +224,37 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
 
 class ProjectSubmissionSerializer(serializers.ModelSerializer):
     student_name = serializers.SerializerMethodField()
+
+   
+    class Meta:
+        model = ProjectSubmission
+        fields = ["id", "project", "student", 
+                  "submission_file", "submitted_at", 
+                  "feedback", "student_name","teacher_evaluation", "teacher"
+                  ]
+        read_only_fields = ["submitted_at"]
+        # Fetch student's full name
+    def get_student_name(self, obj):
+        uder_details = UserDetails.objects.filter(UserId=obj.student.UserId).first()
+        return f"{uder_details.FirstName} {uder_details.LastName}"
+    
+    # Fetch student's full name
+    def get_teacher_name(self, obj):
+        uder_details = UserDetails.objects.filter(UserId=obj.teacher.UserId).first()
+        return f"{uder_details.FirstName} {uder_details.LastName}"
+    
+    
+class ProjectSubmissionListSerializer(ProjectSessionSerializer):
     project = ClassroomProjectSerializer(read_only=True)
+    student_name = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectSubmission
-        fields = ["id", "project", "student", "submission_file", "submitted_at", "feedback", "student_name","teacher_evaluation", "teacher",]
+        fields = ["id", "project", "student", 
+                  "submission_file", "submitted_at", 
+                  "feedback", "student_name","teacher_evaluation", "teacher"
+                  ]
         read_only_fields = ["submitted_at"]
-
     # Fetch student's full name
     def get_student_name(self, obj):
         uder_details = UserDetails.objects.filter(UserId=obj.student.UserId).first()
@@ -239,6 +264,9 @@ class ProjectSubmissionSerializer(serializers.ModelSerializer):
     def get_teacher_name(self, obj):
         uder_details = UserDetails.objects.filter(UserId=obj.teacher.UserId).first()
         return f"{uder_details.FirstName} {uder_details.LastName}"
+    
+
+
 class ProjectSubmissionEvaluationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectSubmission
