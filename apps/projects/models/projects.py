@@ -130,7 +130,7 @@ class ProjectSubmission(models.Model):
     )
 
     def __str__(self):
-        return f"{self.student.FirstName} {self.student.LastName} - {self.project.title}"
+        return f"{self.project_id}"
     
     class Meta:
         db_table = 'ProjectSubmission'
