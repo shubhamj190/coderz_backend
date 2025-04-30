@@ -282,16 +282,16 @@ class ProjectSubmissionCreateView(APIView):
             )
 
         # 🚫 Check for existing submission
-        existing_submission = ProjectSubmission.objects.filter(
-            student=student.UserId,
-            project=project
-        ).first()
+        # existing_submission = ProjectSubmission.objects.filter(
+        #     student=student.UserId,
+        #     project=project
+        # ).first()
 
-        if existing_submission:
-            return Response(
-                {"error": "You have already submitted this project."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # if existing_submission:
+        #     return Response(
+        #         {"error": "You have already submitted this project."},
+        #         status=status.HTTP_400_BAD_REQUEST
+        #     )
 
         # Create submission
         data = {
@@ -328,7 +328,8 @@ class ProjectSubmissionListView(ListAPIView):
         # Get query params
         faculty_id = self.request.query_params.get('faculty')
         pending = self.request.query_params.get('pending')
-
+        group_id = self.request.query_params.get('group_id')
+        groups = None
         queryset = ProjectSubmission.objects.all()
         if user_type == "Admin":
             pass  # Keep full queryset
@@ -336,6 +337,7 @@ class ProjectSubmissionListView(ListAPIView):
             group_teacher = TeacherLocationDetails.objects.filter(UserId=user_identity.UserId).values_list('GID_id', flat=True)
             projects = ClassroomProject.objects.filter(group__GID__in=group_teacher)
             queryset = queryset.filter(project__in=projects)
+            groups = projects.values_list('group__GroupName', 'group__GID').distinct()
         elif user_type == "Learner":
             queryset = queryset.filter(student=user_identity)
         else:
@@ -361,6 +363,7 @@ class ProjectSubmissionListView(ListAPIView):
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
+        
         serializer = self.get_serializer(queryset, many=True)
         return JsonResponse({'data':serializer.data}, status=status.HTTP_200_OK)
 
@@ -373,15 +376,18 @@ class TeacherProjectsView(APIView):
         if teacher_identity is not None:
             teacher=teacher_identity
 
-        # Retrieve all projects assigned to the logged-in teacher
-        projects = (
-            ClassroomProject.objects
-            .filter(assigned_teacher=teacher)
-            .prefetch_related("assets", "quizzes")
-        )
+        projects =  ClassroomProject.objects.filter(assigned_teacher=teacher).prefetch_related("assets", "quizzes")
+       
+
+        groups = projects.order_by('date_created').values_list('group__GroupName', 'group__GID')
+        groups = list(dict.fromkeys(groups))  # Remove duplicates while preserving order
+
+        group_id = request.GET.get('group_id')  # Get group_id from query params
+        if group_id:
+            projects = projects.filter(group__GID=group_id)
 
         serializer = TeacherClassroomProjectSerializer(projects, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({'data': serializer.data, 'groups': groups}, status=status.HTTP_200_OK)
     
 class TeacherProjectDetailView(APIView):
     permission_classes = [IsSpecificTeacher]

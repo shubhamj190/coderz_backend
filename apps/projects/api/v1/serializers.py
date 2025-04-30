@@ -169,23 +169,6 @@ class ProjectSessionUpdateSerializer(serializers.ModelSerializer):
         model = ProjectSession
         fields = "__all__"
 
-class ProjectSubmissionSerializer(serializers.ModelSerializer):
-    student_name = serializers.SerializerMethodField()
-
-    class Meta:
-        model = ProjectSubmission
-        fields = ["id", "project", "student", "submission_file", "submitted_at", "feedback", "student_name","teacher_evaluation", "teacher",]
-        read_only_fields = ["submitted_at"]
-
-    # Fetch student's full name
-    def get_student_name(self, obj):
-        uder_details = UserDetails.objects.filter(UserId=obj.student.UserId).first()
-        return f"{uder_details.FirstName} {uder_details.LastName}"
-    
-    # Fetch student's full name
-    def get_teacher_name(self, obj):
-        uder_details = UserDetails.objects.filter(UserId=obj.teacher.UserId).first()
-        return f"{uder_details.FirstName} {uder_details.LastName}"
 
 class ClassroomProjectSerializer(serializers.ModelSerializer):
     thumbnail = serializers.FileField(required=True)
@@ -238,7 +221,24 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
 
         return instance
 
+class ProjectSubmissionSerializer(serializers.ModelSerializer):
+    student_name = serializers.SerializerMethodField()
+    project = ClassroomProjectSerializer(read_only=True)
+
+    class Meta:
+        model = ProjectSubmission
+        fields = ["id", "project", "student", "submission_file", "submitted_at", "feedback", "student_name","teacher_evaluation", "teacher",]
+        read_only_fields = ["submitted_at"]
+
+    # Fetch student's full name
+    def get_student_name(self, obj):
+        uder_details = UserDetails.objects.filter(UserId=obj.student.UserId).first()
+        return f"{uder_details.FirstName} {uder_details.LastName}"
     
+    # Fetch student's full name
+    def get_teacher_name(self, obj):
+        uder_details = UserDetails.objects.filter(UserId=obj.teacher.UserId).first()
+        return f"{uder_details.FirstName} {uder_details.LastName}"
 class ProjectSubmissionEvaluationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectSubmission
