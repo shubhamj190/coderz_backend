@@ -436,7 +436,7 @@ class StudentProjectsView(APIView):
             student=student_identity
 
         # Ensure the student has groups assigned
-        student_groups = UserGroup.objects.filter(user=student).values_list('GroupId', flat=True)
+        student_groups = UserGroup.objects.filter(user=student, IsDeleted = False).values_list('GroupId', flat=True)
         if not student_groups.exists():
             return Response({"message": "No groups assigned to this student."}, status=status.HTTP_404_NOT_FOUND)
 
