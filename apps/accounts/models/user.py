@@ -6,6 +6,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from apps.accounts.models.grades import Division, Grade
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
+from django.utils.timezone import now
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, UserName=None, Email=None, password=None, **extra_fields):
@@ -439,4 +440,28 @@ class UserRoles(models.Model):
 
     class Meta:
         db_table = "UserRoles"
+        # managed = False
+
+
+class UserSessionLog(models.Model):
+    UserId = models.ForeignKey(
+        UsersIdentity,
+        on_delete=models.CASCADE,
+        db_column="UserId",
+        related_name="session_logs",
+    )
+    login_time = models.DateTimeField(default=now)
+    logout_time = models.DateTimeField(null=True, blank=True)
+    session_duration = models.DurationField(null=True, blank=True)  # Automatically calculated
+
+    def save(self, *args, **kwargs):
+        if self.login_time and self.logout_time:
+            self.session_duration = self.logout_time - self.login_time
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.user.username} | {self.login_time} to {self.logout_time or 'active'}"
+    
+    class Meta:
+        db_table = "UserSessionLog"
         # managed = False

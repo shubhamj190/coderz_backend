@@ -379,7 +379,6 @@ class TeacherProjectsView(APIView):
             teacher=teacher_identity
 
         projects =  ClassroomProject.objects.filter(assigned_teacher=teacher).prefetch_related("assets", "quizzes")
-       
 
         groups = projects.order_by('date_created').values_list('group__GroupName', 'group__GID')
         groups = list(dict.fromkeys(groups))  # Remove duplicates while preserving order
