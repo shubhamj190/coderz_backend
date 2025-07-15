@@ -22,6 +22,7 @@ from .views import (
     UnifiedForgotPasswordAPIView,
     UniversalAuthenticator,
     UnifiedLogoutView,
+    UserSessionLogCreateView,
 )
 
 urlpatterns = [
@@ -57,5 +58,6 @@ urlpatterns = [
     # gradedivision mapping
     path('admin/grade-division-mapping/', GradeDivisionMappingAPIView.as_view(), name='grade-division-mapping'),
     path('admin/single-grade-division/<str:grade_id>/', SingleGradeDivisionMappingAPIView.as_view(), name='grade-division-detail'),
+    path('log-session/', UserSessionLogCreateView.as_view(), name='log-session'),
 
 ]

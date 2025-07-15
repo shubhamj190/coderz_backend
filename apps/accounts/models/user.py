@@ -452,15 +452,16 @@ class UserSessionLog(models.Model):
     )
     login_time = models.DateTimeField(default=now)
     logout_time = models.DateTimeField(null=True, blank=True)
-    session_duration = models.DurationField(null=True, blank=True)  # Automatically calculated
+    session_duration = models.BigIntegerField(null=True, blank=True)  # Automatically calculated
 
     def save(self, *args, **kwargs):
         if self.login_time and self.logout_time:
-            self.session_duration = self.logout_time - self.login_time
+            delta = self.logout_time - self.login_time
+            self.session_duration = int(delta.total_seconds())  # or int(delta.total_seconds() * 1_000_000) for microseconds
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.user.username} | {self.login_time} to {self.logout_time or 'active'}"
+        return f"{self.UserId} | {self.login_time} to {self.logout_time or 'active'}"
     
     class Meta:
         db_table = "UserSessionLog"

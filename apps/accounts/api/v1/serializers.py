@@ -3,7 +3,7 @@ from django.forms import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 from apps.accounts.models.grades import GradeDivisionMapping
-from apps.accounts.models.user import GroupMaster, Location, TeacherLocationDetails, UserDetails, UserGroup
+from apps.accounts.models.user import GroupMaster, Location, TeacherLocationDetails, UserDetails, UserGroup, UserSessionLog
 from apps.accounts.models.user import UsersIdentity as User
 from apps.accounts.models import Grade, Division
 from django.db import transaction
@@ -478,3 +478,9 @@ class UniversalAuthenticateUserSeralizer(serializers.Serializer):
     DeviceId = serializers.CharField(required=False, allow_null=True, allow_blank=False)
     eventName = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     dataId = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+class UserSessionLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserSessionLog
+        fields = ['UserId', 'login_time', 'logout_time', 'session_duration']
+        read_only_fields = ['session_duration']

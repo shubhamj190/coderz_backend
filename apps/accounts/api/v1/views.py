@@ -37,7 +37,8 @@ from .serializers import (
     TeacherDetailSerializer,
     TeacherListSerializer,
     CustomTokenObtainPairSerializer,
-    UniversalAuthenticateUserSeralizer
+    UniversalAuthenticateUserSeralizer,
+    UserSessionLogSerializer
 )
 
 from apps.accounts.models.user import GroupMaster, RolesV2, TeacherLocationDetails, UserDetails, UserMaster, UserRole, UserRoles, UsersIdentity
@@ -897,3 +898,15 @@ class SingleGradeDivisionMappingAPIView(APIView):
             return Response({"error": "Grade not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class UserSessionLogCreateView(APIView):
+    def post(self, request):
+        serializer = UserSessionLogSerializer(data=request.data)
+        if serializer.is_valid():
+            log = serializer.save()
+            # Recalculate duration if both times are present
+            if log.login_time and log.logout_time:
+                log.session_duration = log.logout_time - log.login_time
+                log.save()
+            return Response({'message': 'Session logged successfully'}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
