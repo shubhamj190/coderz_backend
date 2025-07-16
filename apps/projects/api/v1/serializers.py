@@ -10,6 +10,7 @@ from apps.projects.models.projects import ClassroomProject, ProjectAsset, Projec
 from apps.projects.utils import get_teacher_for_grade_division
 from rest_framework import viewsets, status
 from rest_framework.response import Response
+import ast
 
 
 class ProjectAssetSerializer(serializers.ModelSerializer):
@@ -177,7 +178,7 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
     assets = StudentAndTeacherProjectAssetSerializer(many=True, read_only=True)
     quizzes = ReflectiveQuizSerializer(many=True, read_only=True)
     submitted_quizzes = ReflectiveQuizSubmissionSerializer(many=True, read_only=True)
-    group = serializers.ListField(child=serializers.CharField(), write_only=True)
+    group = serializers.CharField(write_only=True)
 
 
     class Meta:
@@ -187,11 +188,20 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
             'thumbnail', 'due_date', 'assets', 'quizzes', 'submitted_quizzes','group'
         ]
 
+    def to_internal_value(self, data):
+        ret = super().to_internal_value(data)
+        # Convert 'groups' string to list
+        groups_raw = data.get('group')
+        try:
+            ret['group'] = ast.literal_eval(groups_raw)
+        except (TypeError, ValueError):
+            raise serializers.ValidationError({"groups": "Groups must be a JSON list."})
+        return ret
 
     def create(self, validated_data):
-        groups = validated_data.get('group')
+        group_ids = validated_data.pop('group', [])
         projects = []
-        for group in groups:
+        for group in group_ids:
             group = GroupMaster.objects.filter(GroupId=group).first()
             if not group:
                 raise serializers.ValidationError("No group found for the given grade and division.")
@@ -212,7 +222,7 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
 
             projects.append(classroom_project)
 
-        return projects
+        return projects[0] if projects else None
     
     def update(self, instance, validated_data):
         group = validated_data.get('group')
