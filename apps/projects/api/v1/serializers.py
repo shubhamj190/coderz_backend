@@ -177,7 +177,7 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
     assets = StudentAndTeacherProjectAssetSerializer(many=True, read_only=True)
     quizzes = ReflectiveQuizSerializer(many=True, read_only=True)
     submitted_quizzes = ReflectiveQuizSubmissionSerializer(many=True, read_only=True)
-    group = serializers.CharField(write_only=True)
+    group = serializers.ListField(child=serializers.CharField(), write_only=True)
 
 
     class Meta:
@@ -189,23 +189,30 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
 
 
     def create(self, validated_data):
-        group = validated_data.get('group')
-        group = GroupMaster.objects.filter(GroupId=group).first()
-        if not group:
-            raise serializers.ValidationError("No group found for the given grade and division.")
+        groups = validated_data.get('group')
+        projects = []
+        for group in groups:
+            group = GroupMaster.objects.filter(GroupId=group).first()
+            if not group:
+                raise serializers.ValidationError("No group found for the given grade and division.")
+            
+            if not group:
+                continue
 
-        classroom_project = ClassroomProject.objects.create(
-            title=validated_data['title'],
-            description=validated_data['description'],
-            grade=None,
-            division=None,
-            thumbnail=validated_data.get('thumbnail'),
-            due_date=validated_data['due_date'],
-            group=group,
-            assigned_teacher=validated_data['assigned_teacher']
-        )
+            classroom_project = ClassroomProject.objects.create(
+                title=validated_data['title'],
+                description=validated_data['description'],
+                grade=None,
+                division=None,
+                thumbnail=validated_data.get('thumbnail'),
+                due_date=validated_data['due_date'],
+                group=group,
+                assigned_teacher=validated_data['assigned_teacher']
+            )
 
-        return classroom_project
+            projects.append(classroom_project)
+
+        return projects
     
     def update(self, instance, validated_data):
         group = validated_data.get('group')
