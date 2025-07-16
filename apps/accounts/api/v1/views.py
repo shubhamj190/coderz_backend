@@ -1,4 +1,5 @@
 import base64
+from datetime import datetime
 import logging
 from django.shortcuts import get_object_or_404
 import jwt
@@ -30,6 +31,7 @@ from .serializers import (
     DivisionSerializer,
     GradeDivisionMappingSerializer,
     GradeSerializer,
+    MissionActivitySummarySerializer,
     StudentCreateSerializer,
     StudentDetailSerializer,
     StudentListSerializer,
@@ -41,7 +43,7 @@ from .serializers import (
     UserSessionLogSerializer
 )
 
-from apps.accounts.models.user import GroupMaster, RolesV2, TeacherLocationDetails, UserDetails, UserMaster, UserRole, UserRoles, UsersIdentity
+from apps.accounts.models.user import GroupMaster, MissionActivitySummary, RolesV2, TeacherLocationDetails, UserDetails, UserMaster, UserRole, UserRoles, UsersIdentity
 from apps.accounts.models.user import UsersIdentity as User
 
 logger = logging.getLogger(__name__)
@@ -910,3 +912,41 @@ class UserSessionLogCreateView(APIView):
                 log.save()
             return Response({'message': 'Session logged successfully'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class MissionActivitySummaryCreateOrUpdateAPIView(APIView):
+    def post(self, request):
+        data = request.data
+
+        # Define identifying fields
+        user_id = data.get('user_id')
+        location_id = data.get('location_id')
+        group_id = data.get('group_id')
+        quest_id = data.get('quest_id')
+        content_id = data.get('content_id')
+
+        # Try to find an existing record
+        existing = MissionActivitySummary.objects.filter(
+            user_id=user_id,
+            location_id=location_id,
+            group_id=group_id,
+            quest_id=quest_id,
+            content_id=content_id
+        ).first()
+
+        if existing:
+            # Update existing record
+            existing.access_count = (existing.access_count or 0) + (data.get('access_count') or 1)
+            existing.total_access_duration = (existing.total_access_duration or 0) + (data.get('total_access_duration') or 0)
+            existing.points = (existing.points or 0) + (data.get('points') or 0)
+            existing.modified_on = datetime.utcnow()
+            existing.save()
+
+            serializer = MissionActivitySummarySerializer(existing)
+            return Response({'message': 'Activity updated', 'data': serializer.data}, status=status.HTTP_200_OK)
+        else:
+            # Create new record
+            serializer = MissionActivitySummarySerializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': 'Activity created', 'data': serializer.data}, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

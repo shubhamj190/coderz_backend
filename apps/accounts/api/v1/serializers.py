@@ -1,9 +1,10 @@
 # apps/accounts/api/v1/auth/serializers.py
+import uuid
 from django.forms import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 from apps.accounts.models.grades import GradeDivisionMapping
-from apps.accounts.models.user import GroupMaster, Location, TeacherLocationDetails, UserDetails, UserGroup, UserSessionLog
+from apps.accounts.models.user import GroupMaster, Location, MissionActivitySummary, TeacherLocationDetails, UserDetails, UserGroup, UserSessionLog
 from apps.accounts.models.user import UsersIdentity as User
 from apps.accounts.models import Grade, Division
 from django.db import transaction
@@ -484,3 +485,13 @@ class UserSessionLogSerializer(serializers.ModelSerializer):
         model = UserSessionLog
         fields = ['UserId', 'login_time', 'logout_time', 'session_duration']
         read_only_fields = ['session_duration']
+
+class MissionActivitySummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MissionActivitySummary
+        fields = '__all__'
+        read_only_fields = ['mission_activity_summary_id']  # if you want auto UUID
+
+    def create(self, validated_data):
+        validated_data['mission_activity_summary_id'] = uuid.uuid4()
+        return super().create(validated_data)

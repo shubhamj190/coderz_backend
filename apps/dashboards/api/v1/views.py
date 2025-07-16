@@ -7,7 +7,10 @@ from rest_framework import status
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
+from apps.accounts.models.user import UserDetails, UsersIdentity
+from apps.projects.models.projects import ClassroomProject, ProjectSubmission
 from core.permissions.role_based import IsSpecificAdmin, IsSpecificTeacher, IsSpecificStudent
+from django.db.models import Q
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +20,9 @@ class HomeView(APIView):
 
     def get(self, request):
         user = request.user  # Get the logged-in user
-        user_type = user.details.UserType  # Retrieve UserType if it exists
+        user_identity = UsersIdentity.objects.filter(UserName=user.username).first()
+        user_details = UserDetails.objects.filter(UserId=user_identity.UserId).first()
+        user_type = user_details.UserType
 
         if not user_type:
             return Response({"error": "User type not found."}, status=status.HTTP_400_BAD_REQUEST)
@@ -46,10 +51,33 @@ class HomeView(APIView):
         }, status=status.HTTP_200_OK)
 
     def get_teacher_dashboard(self):
+        
+        teacher = self.request.user  # Assuming `request.user` is a Teacher
+        teacher_identity=UsersIdentity.objects.filter(UserName=teacher.username).first()
+        if teacher_identity is not None:
+            teacher=teacher_identity
+        # Total Projects Assigned
+        total_projects_assigned = ClassroomProject.objects.filter(assigned_teacher=teacher).count()
+
+        # Total Projects Uploaded (has a file)
+        total_projects_uploaded = ProjectSubmission.objects.filter(project__assigned_teacher = teacher).exclude(
+            submission_file__isnull=True
+        ).exclude(
+            submission_file=''
+        ).count()
+
+        # Total Projects Reviewed (has feedback or evaluation)
+        total_projects_reviewed = ProjectSubmission.objects.filter(project__assigned_teacher = teacher)\
+        .filter(teacher_evaluation__isnull=False).count()
+
+        
+
+
         return Response({
-            "message": "Welcome to the Teacher Portal!",
-            "available_views": ["My Classes", "Assessments", "Student Progress"]
-        }, status=status.HTTP_200_OK)
+            "total_projects_assigned": total_projects_assigned,
+            "total_projects_uploaded": total_projects_uploaded,
+            "total_projects_reviewed": total_projects_reviewed
+        })
 
     def get_default_dashboard(self):
         return Response({

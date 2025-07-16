@@ -466,3 +466,21 @@ class UserSessionLog(models.Model):
     class Meta:
         db_table = "UserSessionLog"
         # managed = False
+
+class MissionActivitySummary(models.Model):
+    mission_activity_summary_id = models.UUIDField(max_length=100, primary_key=True, db_column='MissionActivitySummaryId')
+    user_id = models.CharField(max_length=50, null=True, blank=True, db_column='UserId')
+    location_id = models.CharField(max_length=50, db_column='LocationId')
+    group_id = models.CharField(max_length=50, null=True, blank=True, db_column='GroupId')
+    quest_id = models.CharField(max_length=50, null=True, blank=True, db_column='QuestId')
+    content_id = models.CharField(max_length=50, null=True, blank=True, db_column='ContentId')
+    content_type_code = models.CharField(max_length=50, null=True, blank=True, db_column='ContentTypeCode')
+    access_count = models.IntegerField(null=True, blank=True, db_column='AccessCount')
+    total_access_duration = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True, db_column='TotalAccessDuration')
+    first_access_duration = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True, db_column='FirstAccessDuration')
+    points = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True, db_column='Points')
+    modified_on = models.DateTimeField(null=True, blank=True, db_column='ModifiedOn', auto_now=True)
+
+    class Meta:
+        db_table = 'MissionActivitySummary'
+        managed = False  # Prevents Django from modifying the existing MSSQL table

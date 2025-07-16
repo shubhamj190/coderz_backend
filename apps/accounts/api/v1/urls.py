@@ -6,6 +6,7 @@ from .views import (
     AdminChangePasswordView,
     AdminSignupView,
     BulkUploadStudentsAPIView,
+    MissionActivitySummaryCreateOrUpdateAPIView,
     UniversalUsernameLoginAuthenticator,
     DivisionListCreateAPIView,
     DivisionRetrieveUpdateDestroyAPIView,
@@ -59,5 +60,6 @@ urlpatterns = [
     path('admin/grade-division-mapping/', GradeDivisionMappingAPIView.as_view(), name='grade-division-mapping'),
     path('admin/single-grade-division/<str:grade_id>/', SingleGradeDivisionMappingAPIView.as_view(), name='grade-division-detail'),
     path('log-session/', UserSessionLogCreateView.as_view(), name='log-session'),
+    path('mission-activity/', MissionActivitySummaryCreateOrUpdateAPIView.as_view(), name='mission-activity-create'),
 
 ]
