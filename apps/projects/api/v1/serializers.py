@@ -97,14 +97,14 @@ class TeacherClassroomProjectSerializer(serializers.ModelSerializer):
     def get_groupName(self, obj):
         user_group = UserGroup.objects.filter(GroupId=obj.group.GroupId).first()
         if user_group:
-            return user_group.GID.GroupName
-        return None
+            return [user_group.GID.GroupName]
+        return []
 
     def get_groupId(self, obj):
         user_group = UserGroup.objects.filter(GroupId=obj.group.GroupId).first()
         if user_group:
-            return user_group.GID.GroupId
-        return None
+            return [user_group.GID.GroupId]
+        return []
 
     class Meta:
         model = ClassroomProject
