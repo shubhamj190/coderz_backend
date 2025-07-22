@@ -154,12 +154,12 @@ class StudentClassroomProjectSerializer(serializers.ModelSerializer):
         fields = ["id", "title", "description", "assets", "quizzes", "grade", "division", "due_date", "thumbnail",'submitted_quizzes', 'groupId','groupName']
 
 class ProjectSessionSerializer(serializers.ModelSerializer):
-    file_type = serializers.ReadOnlyField()
+    ppt_file = serializers.ReadOnlyField()
     thumbnail = serializers.ImageField(use_url=True, required=False)  # Allow upload
 
     class Meta:
         model = ProjectSession
-        fields = "__all__"
+        fields = ['title', 'overview_text', 'ppt_file', 'thumbnail', 'module_name']
 
 class ProjectSessionUpdateSerializer(serializers.ModelSerializer):
     file_type = serializers.ReadOnlyField()
@@ -179,17 +179,19 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
     quizzes = ReflectiveQuizSerializer(many=True, read_only=True)
     submitted_quizzes = ReflectiveQuizSubmissionSerializer(many=True, read_only=True)
     group = serializers.ListField(child=serializers.CharField(), write_only=True)
+    sessions = ProjectSessionSerializer(many=True, write_only=True, required=False)
 
 
     class Meta:
         model = ClassroomProject
         fields = [
             'id', 'title', 'description', 'assigned_teacher', 
-            'thumbnail', 'due_date', 'assets', 'quizzes', 'submitted_quizzes','group'
+            'thumbnail', 'due_date', 'assets', 'quizzes', 'submitted_quizzes','group', 'sessions'
         ]
 
     def create(self, validated_data):
         groups = validated_data.get('group')
+        session_data = validated_data.get('sessions')
         projects = []
         for group in groups:
             group = GroupMaster.objects.filter(GroupId=group).first()
@@ -209,6 +211,9 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
                 group=group,
                 assigned_teacher=validated_data['assigned_teacher']
             )
+            # Create ProjectSession objects
+            for session in session_data:
+                ProjectSession.objects.create(project=classroom_project, **session)
 
             projects.append(classroom_project)
 
