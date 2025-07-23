@@ -253,7 +253,7 @@ class ProjectSessionListView(APIView):
         if project_id:
             sessions = sessions.filter(project_id=project_id)
 
-        serializer = ProjectSessionSerializer(sessions, many=True)
+        serializer = ProjectSessionSerializerGet(sessions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class ProjectSubmissionCreateView(APIView):

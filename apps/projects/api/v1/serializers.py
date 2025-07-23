@@ -161,6 +161,14 @@ class ProjectSessionSerializer(serializers.ModelSerializer):
         model = ProjectSession
         fields = ['title', 'overview_text', 'ppt_file', 'thumbnail', 'module_name']
 
+class ProjectSessionSerializerGet(serializers.ModelSerializer):
+    file_type = serializers.ReadOnlyField()
+    thumbnail = serializers.ImageField(use_url=True, required=False)  # Allow upload
+
+    class Meta:
+        model = ProjectSession
+        fields = "__all__"
+
 class ProjectSessionUpdateSerializer(serializers.ModelSerializer):
     file_type = serializers.ReadOnlyField()
     thumbnail = serializers.ImageField(use_url=True, required=False)  # Allow upload
