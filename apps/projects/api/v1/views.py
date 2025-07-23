@@ -372,6 +372,7 @@ class ProjectSubmissionListView(ListAPIView):
 
 class TeacherProjectsView(APIView):
     permission_classes = [IsSpecificTeacher]  # Ensure only logged-in users can access
+    pagination_class = StandardResultsSetPagination
 
     def get(self, request, *args, **kwargs):
         teacher = request.user  # Assuming `request.user` is a Teacher
