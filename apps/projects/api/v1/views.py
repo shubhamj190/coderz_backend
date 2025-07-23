@@ -38,6 +38,7 @@ class ClassroomProjectListView(ListAPIView):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ["grade", "division"]  # Filters for grade and division
     ordering_fields = ["due_date", "title"]  # Allow ordering by due_date & title
+    pagination_class = StandardResultsSetPagination
     
 class ClassroomProjectRetrieveUpdateView(RetrieveUpdateAPIView):
     queryset = ClassroomProject.objects.all()
