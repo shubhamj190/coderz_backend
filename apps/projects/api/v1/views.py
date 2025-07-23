@@ -375,22 +375,33 @@ class TeacherProjectsView(APIView):
     pagination_class = StandardResultsSetPagination
 
     def get(self, request, *args, **kwargs):
-        teacher = request.user  # Assuming `request.user` is a Teacher
-        teacher_identity=UsersIdentity.objects.filter(UserName=teacher.username).first()
+        teacher = request.user
+        teacher_identity = UsersIdentity.objects.filter(UserName=teacher.username).first()
         if teacher_identity is not None:
-            teacher=teacher_identity
+            teacher = teacher_identity
 
-        projects =  ClassroomProject.objects.filter(assigned_teacher=teacher).prefetch_related("assets", "quizzes")
+        projects = ClassroomProject.objects.filter(
+            assigned_teacher=teacher
+        ).prefetch_related("assets", "quizzes")
 
-        groups = projects.order_by('date_created').values_list('group__GroupName', 'group__GID')
-        groups = list(dict.fromkeys(groups))  # Remove duplicates while preserving order
-
-        group_id = request.GET.get('group_id')  # Get group_id from query params
+        # Optional filter by group
+        group_id = request.GET.get('group_id')
         if group_id:
             projects = projects.filter(group__GID=group_id)
 
-        serializer = TeacherClassroomProjectSerializer(projects, many=True)
-        return Response({'data': serializer.data, 'groups': groups}, status=status.HTTP_200_OK)
+        # Prepare groups data
+        groups = projects.order_by('date_created').values_list('group__GroupName', 'group__GID')
+        groups = list(dict.fromkeys(groups))
+
+        # Apply pagination manually
+        paginator = self.pagination_class()
+        paginated_projects = paginator.paginate_queryset(projects, request, view=self)
+
+        serializer = TeacherClassroomProjectSerializer(paginated_projects, many=True)
+        return paginator.get_paginated_response({
+            'projects': serializer.data,
+            'groups': groups
+        })
     
 class TeacherProjectDetailView(APIView):
     permission_classes = [IsSpecificTeacher]
