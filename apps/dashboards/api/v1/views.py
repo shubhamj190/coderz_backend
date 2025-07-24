@@ -7,10 +7,10 @@ from rest_framework import status
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
-from apps.accounts.models.user import UserDetails, UsersIdentity
+from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserDetails, UserGroup, UserSessionLog, UsersIdentity
 from apps.projects.models.projects import ClassroomProject, ProjectSubmission
 from core.permissions.role_based import IsSpecificAdmin, IsSpecificTeacher, IsSpecificStudent
-from django.db.models import Q
+from django.db.models import Q, Avg
 
 
 logger = logging.getLogger(__name__)
@@ -56,6 +56,7 @@ class HomeView(APIView):
         teacher_identity=UsersIdentity.objects.filter(UserName=teacher.username).first()
         if teacher_identity is not None:
             teacher=teacher_identity
+        teacher_id = teacher.UserId
         # Total Projects Assigned
         total_projects_assigned = ClassroomProject.objects.filter(assigned_teacher=teacher).count()
 
@@ -70,14 +71,64 @@ class HomeView(APIView):
         total_projects_reviewed = ProjectSubmission.objects.filter(project__assigned_teacher = teacher)\
         .filter(teacher_evaluation__isnull=False).count()
 
-        
+        group_mappings = TeacherLocationDetails.objects.filter(
+        UserId=teacher_id,
+        IsDeleted=False
+        )
+        result = []
+        for mapping in group_mappings:
+            group_id = mapping.GroupId
+            location_id = mapping.LocationId
+            # Get students in this group
+            student_qs = UserGroup.objects.filter(
+                GroupId=group_id,
+                LocationId=location_id,
+                IsDeleted=False
+            ).values_list('user__UserId', flat=True)
+
+            total_students = student_qs.count()
+
+            # Number of project submissions from this group
+            submitted_count = ProjectSubmission.objects.filter(
+                student_id__in=student_qs
+            ).count()
+
+            # You may fetch grade from GroupMaster or construct manually
+            group_name = GroupMaster.objects.filter(
+                GroupId=group_id
+            ).first().GroupName if GroupMaster.objects.filter(GroupId=group_id).exists() else f"Group {group_id}"
+
+            result.append({
+            "grade": group_name,
+            "total_students": total_students,
+            "projects_assigned": total_students,  # assuming assigned = total
+            "projects_submitted": submitted_count,
+            "action": f"/teacher/project-details?group_id={group_id}"
+        })
+            
+        teacher_groups = group_mappings.values_list('GroupId', flat=True).distinct()
+
+        student_user_ids = UserGroup.objects.filter(
+            GroupId__in=teacher_groups,
+            IsDeleted=False
+        ).values_list('user_id', flat=True)
+
+        average_duration = UserSessionLog.objects.filter(
+            UserId__in=student_user_ids,
+            session_duration__isnull=False
+        ).aggregate(avg_duration=Avg('session_duration'))['avg_duration']
+
 
 
         return Response({
             "total_projects_assigned": total_projects_assigned,
             "total_projects_uploaded": total_projects_uploaded,
-            "total_projects_reviewed": total_projects_reviewed
+            "total_projects_reviewed": total_projects_reviewed,
+            "group_details": result,
+            'average_session_duration_minutes': round((average_duration or 0) / 60, 2)
         })
+    
+
 
     def get_default_dashboard(self):
         return Response({
