@@ -384,14 +384,15 @@ class TeacherProjectsView(APIView):
             assigned_teacher=teacher
         ).prefetch_related("assets", "quizzes")
 
-        # Optional filter by group
-        group_id = request.GET.get('group_id')
-        if group_id:
-            projects = projects.filter(group__GID=group_id)
 
         # Prepare group list
         groups = projects.order_by('date_created').values_list('group__GroupName', 'group__GID')
         groups = list(dict.fromkeys(groups))
+
+        # Optional filter by group
+        group_id = request.GET.get('group_id')
+        if group_id:
+            projects = projects.filter(group__GID=group_id)
 
         # Paginate only the projects
         paginator = self.pagination_class()
