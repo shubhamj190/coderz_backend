@@ -11,7 +11,8 @@ from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserD
 from apps.projects.models.projects import ClassroomProject, ProjectSubmission
 from core.permissions.role_based import IsSpecificAdmin, IsSpecificTeacher, IsSpecificStudent
 from django.db.models import Q, Avg
-
+from django.shortcuts import get_object_or_404
+from django.db.models import Count, Sum
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +104,6 @@ class HomeView(APIView):
             "total_students": total_students,
             "projects_assigned": total_students,  # assuming assigned = total
             "projects_submitted": submitted_count,
-            "action": f"/teacher/project-details?group_id={group_id}"
         })
             
         teacher_groups = group_mappings.values_list('GroupId', flat=True).distinct()
@@ -135,3 +135,126 @@ class HomeView(APIView):
             "message": "Welcome!",
             "available_views": ["Home", "Profile", "Support"]
         }, status=status.HTTP_200_OK)
+    
+class GetTeacherStudentsProjectReport(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        teacher_identity = UsersIdentity.objects.filter(UserName=user.username).first()
+        if not teacher_identity:
+            return Response({"detail": "Teacher identity not found."}, status=404)
+
+        # Get optional group_id
+        group_id = request.GET.get('group_id')
+        # Filter projects by teacher and optionally by group
+        projects_qs = ClassroomProject.objects.filter(assigned_teacher=teacher_identity)
+        if group_id:
+            projects_qs = projects_qs.filter(group__GroupId=group_id)
+
+        project_ids = projects_qs.values_list('id', flat=True)
+        groups = projects_qs.values_list('group__GroupId', flat=True).distinct()
+
+        # Get students in these groups
+        students = UserGroup.objects.filter(GroupId__in=groups)
+        data = []
+
+        for student in students:
+            assigned_projects_count = projects_qs.filter(group__GroupId=student.GroupId).count()
+            submitted_projects_count = ProjectSubmission.objects.filter(
+                student=student.user,
+                project_id__in=project_ids
+            ).count()
+            student_details = UserDetails.objects.filter(UserId=student.user.UserId).first()
+            if not student_details:
+                continue
+            data.append({
+                "grade": GroupMaster.objects.get(GroupId=student.GroupId).GroupName,
+                "student_name": f"{student_details.FirstName} {student_details.LastName}",
+                "projects_assigned": assigned_projects_count,
+                "projects_submitted": submitted_projects_count,
+                "student_id": student.id,
+                "report_url": f"/reports/student/{student.user.UserId}/"
+            })
+
+        return Response({"report": data})
+    
+class StudentDashboardReportView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, student_id):
+        student = get_object_or_404(UsersIdentity, UserId=student_id)
+        user = student
+        group= UserGroup.objects.filter(user=user).first()
+        if not group:
+            return Response({"error": "Student group not found."}, status=status.HTTP_404_NOT_FOUND)
+        user_details = UserDetails.objects.filter(UserId=student.UserId).first()
+        if not user_details:
+            return Response({"error": "User details not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # # Learn Summary
+        # learn_summary = {
+        #     "quiz": {
+        #         "assigned": Quiz.objects.filter(group=student.group).count(),
+        #         "viewed": QuizAttempt.objects.filter(student=student).count()
+        #     },
+        #     "practice_papers": {
+        #         "assigned": PracticePaper.objects.filter(group=student.group).count(),
+        #         "viewed": PracticePaperAttempt.objects.filter(student=student).count()
+        #     },
+        #     "notes": {
+        #         "assigned": PDFNote.objects.filter(group=student.group).count(),
+        #         "viewed": PDFNoteView.objects.filter(student=student).count()
+        #     }
+        # }
+
+        # Project Summary
+        assigned_projects = ClassroomProject.objects.filter(group=group.GID).count()
+        uploaded_projects = ProjectSubmission.objects.filter(student=student).count()
+        reviewed_projects = ProjectSubmission.objects.filter(
+            student=student
+        ).exclude(teacher_evaluation=None).count()
+
+        project_summary = {
+            "assigned": assigned_projects,
+            "uploaded": uploaded_projects,
+            "reviewed": reviewed_projects
+        }
+
+        # Time Spent (example: in minutes)
+        total_session = UserSessionLog.objects.filter(UserId=user)
+        total_spent = total_session.aggregate(total=Sum('session_duration'))['total'] or 0
+        allotted_time = assigned_projects * 2  # example logic
+
+        total_time = {
+            "allotted_time": allotted_time,
+            "spent_time": round(total_spent / 60, 2)  # seconds to minutes
+        }
+
+        # Daily Activity (grouped by date)
+        from django.db.models.functions import TruncDate
+        daily_sessions = UserSessionLog.objects.filter(UserId=user).annotate(date=TruncDate('login_time'))
+
+        daily_activity = []
+        for date in daily_sessions.values_list('date', flat=True).distinct():
+            session_time = daily_sessions.filter(date=date).aggregate(
+                total=Sum('session_duration'))['total'] or 0
+
+            activity = {
+                "date": date,
+                # "quiz_attempted": QuizAttempt.objects.filter(student=student, attempted_at__date=date).count(),
+                # "practice_papers_downloaded": PracticePaperAttempt.objects.filter(student=student, attempted_at__date=date).count(),
+                # "notes_viewed": PDFNoteView.objects.filter(student=student, viewed_at__date=date).count(),
+                "projects_completed": ProjectSubmission.objects.filter(student=student, submitted_at__date=date).count(),
+                "session_time": round(session_time / 60, 2)
+            }
+            daily_activity.append(activity)
+
+        return Response({
+            "student_name": f"{user_details.FirstName} {user_details.LastName}",
+            "grade": group.GID.GroupName,
+            # "learn_summary": learn_summary,
+            "project_summary": project_summary,
+            "total_time_spent": total_time,
+            "daily_activity": daily_activity
+        })
