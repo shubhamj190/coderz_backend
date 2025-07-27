@@ -173,7 +173,7 @@ class GetTeacherStudentsProjectReport(APIView):
                 "student_name": f"{student_details.FirstName} {student_details.LastName}",
                 "projects_assigned": assigned_projects_count,
                 "projects_submitted": submitted_projects_count,
-                "student_id": student.id,
+                "student_id": student.user.UserId,
                 "report_url": f"/reports/student/{student.user.UserId}/"
             })
 
