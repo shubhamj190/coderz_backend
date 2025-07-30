@@ -7,12 +7,13 @@ from rest_framework import status
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
-from apps.accounts.models.user import GroupMaster, TeacherLocationDetails, UserDetails, UserGroup, UserSessionLog, UsersIdentity
+from apps.accounts.models.user import GroupMaster, MissionActivitySummary, TeacherLocationDetails, UserDetails, UserGroup, UserSessionLog, UsersIdentity
 from apps.projects.models.projects import ClassroomProject, ProjectSubmission
 from core.permissions.role_based import IsSpecificAdmin, IsSpecificTeacher, IsSpecificStudent
 from django.db.models import Q, Avg
 from django.shortcuts import get_object_or_404
 from django.db.models import Count, Sum
+from django.db.models.functions import TruncDate
 
 logger = logging.getLogger(__name__)
 
@@ -118,16 +119,25 @@ class HomeView(APIView):
             session_duration__isnull=False
         ).aggregate(avg_duration=Avg('session_duration'))['avg_duration']
 
+        pdf_count = MissionActivitySummary.objects.filter(
+            user_id__in=student_user_ids,
+            content_type_code__in=['04','4', '05', '5']  # Assuming these are the codes for PDF notes
+        ).count()
 
+        quiz_count = MissionActivitySummary.objects.filter(
+            user_id__in=student_user_ids,
+            content_type_code__in=['08','8', '09', '9']  # Assuming these are the codes for PDF notes
+        ).count()
 
         return Response({
             "total_projects_assigned": total_projects_assigned,
             "total_projects_uploaded": total_projects_uploaded,
             "total_projects_reviewed": total_projects_reviewed,
             "group_details": result,
-            'average_session_duration_minutes': round((average_duration or 0) / 60, 2)
+            'average_session_duration_minutes': round((average_duration or 0) / 60, 2),
+            "pdf_notes_accessed": pdf_count,
+            "quizzes_attempted": quiz_count,
         })
-    
 
 
     def get_default_dashboard(self):
@@ -182,31 +192,39 @@ class GetTeacherStudentsProjectReport(APIView):
 class StudentDashboardReportView(APIView):
     permission_classes = [IsAuthenticated]
 
+    
     def get(self, request, student_id):
         student = get_object_or_404(UsersIdentity, UserId=student_id)
         user = student
-        group= UserGroup.objects.filter(user=user).first()
+        group = UserGroup.objects.filter(user=user).first()
         if not group:
             return Response({"error": "Student group not found."}, status=status.HTTP_404_NOT_FOUND)
+        
         user_details = UserDetails.objects.filter(UserId=student.UserId).first()
         if not user_details:
             return Response({"error": "User details not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # # Learn Summary
-        # learn_summary = {
-        #     "quiz": {
-        #         "assigned": Quiz.objects.filter(group=student.group).count(),
-        #         "viewed": QuizAttempt.objects.filter(student=student).count()
-        #     },
-        #     "practice_papers": {
-        #         "assigned": PracticePaper.objects.filter(group=student.group).count(),
-        #         "viewed": PracticePaperAttempt.objects.filter(student=student).count()
-        #     },
-        #     "notes": {
-        #         "assigned": PDFNote.objects.filter(group=student.group).count(),
-        #         "viewed": PDFNoteView.objects.filter(student=student).count()
-        #     }
-        # }
+        # Content type codes
+        QUIZ_CODES = ['8', '9']
+        PDF_CODES = ['4', '5']
+        PRACTICE_CODES = ['6']       # Update if necessary
+        PROJECT_CODES = ['7']        # Update if necessary
+
+        # Learn Summary
+        learn_summary = {
+            "quiz": {
+                "viewed": MissionActivitySummary.objects.filter(
+                    user_id=student.UserId,
+                    content_type_code__in=QUIZ_CODES
+                ).count()
+            },
+            "pdf_count": {
+                "viewed": MissionActivitySummary.objects.filter(
+                    user_id=student.UserId,
+                    content_type_code__in=PDF_CODES
+                ).count()
+            }
+        }
 
         # Project Summary
         assigned_projects = ClassroomProject.objects.filter(group=group.GID).count()
@@ -221,39 +239,43 @@ class StudentDashboardReportView(APIView):
             "reviewed": reviewed_projects
         }
 
-        # Time Spent (example: in minutes)
+        # Time Spent
         total_session = UserSessionLog.objects.filter(UserId=user)
         total_spent = total_session.aggregate(total=Sum('session_duration'))['total'] or 0
-        allotted_time = assigned_projects * 2  # example logic
+        allotted_time = assigned_projects * 2
 
         total_time = {
             "allotted_time": allotted_time,
-            "spent_time": round(total_spent / 60, 2)  # seconds to minutes
+            "spent_time": round(total_spent / 60, 2)
         }
 
-        # Daily Activity (grouped by date)
-        from django.db.models.functions import TruncDate
-        daily_sessions = UserSessionLog.objects.filter(UserId=user).annotate(date=TruncDate('login_time'))
+        # Daily Activity (from MissionActivitySummary)
+        import pdb; pdb.set_trace()
+        daily_activity_data = MissionActivitySummary.objects.filter(
+            user_id=student.UserId
+        ).annotate(date=TruncDate('modified_on')).values('date').annotate(
+            quiz_attempted=Count('mission_activity_summary_id', filter=Q(content_type_code__in=QUIZ_CODES)),
+            practice_papers_downloaded=Count('mission_activity_summary_id', filter=Q(content_type_code__in=PRACTICE_CODES)),
+            notes_viewed=Count('mission_activity_summary_id', filter=Q(content_type_code__in=PDF_CODES)),
+            projects_completed=Count('mission_activity_summary_id', filter=Q(content_type_code__in=PROJECT_CODES)),
+            session_time=Sum('total_access_duration')
+        ).order_by('date')
 
         daily_activity = []
-        for date in daily_sessions.values_list('date', flat=True).distinct():
-            session_time = daily_sessions.filter(date=date).aggregate(
-                total=Sum('session_duration'))['total'] or 0
-
-            activity = {
-                "date": date,
-                # "quiz_attempted": QuizAttempt.objects.filter(student=student, attempted_at__date=date).count(),
-                # "practice_papers_downloaded": PracticePaperAttempt.objects.filter(student=student, attempted_at__date=date).count(),
-                # "notes_viewed": PDFNoteView.objects.filter(student=student, viewed_at__date=date).count(),
-                "projects_completed": ProjectSubmission.objects.filter(student=student, submitted_at__date=date).count(),
-                "session_time": round(session_time / 60, 2)
-            }
-            daily_activity.append(activity)
+        for row in daily_activity_data:
+            daily_activity.append({
+                "date": row['date'],
+                "quiz_attempted": row['quiz_attempted'],
+                "practice_papers_downloaded": row['practice_papers_downloaded'],
+                "notes_viewed": row['notes_viewed'],
+                "projects_completed": row['projects_completed'],
+                "session_time": round(row['session_time'] or 0, 2)
+            })
 
         return Response({
             "student_name": f"{user_details.FirstName} {user_details.LastName}",
             "grade": group.GID.GroupName,
-            # "learn_summary": learn_summary,
+            "learn_summary": learn_summary,
             "project_summary": project_summary,
             "total_time_spent": total_time,
             "daily_activity": daily_activity
