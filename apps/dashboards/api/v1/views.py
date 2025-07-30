@@ -251,7 +251,6 @@ class StudentDashboardReportView(APIView):
         }
 
         # Daily Activity (from MissionActivitySummary)
-        import pdb; pdb.set_trace()
         daily_activity_data = MissionActivitySummary.objects.filter(
             user_id=student.UserId
         ).annotate(date=TruncDate('modified_on')).values('date').annotate(
