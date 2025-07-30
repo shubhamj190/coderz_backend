@@ -440,69 +440,66 @@ class TeacherProjectDetailView(APIView):
             )
 
 class StudentProjectsView(APIView):
-    permission_classes = [AllowAny]  # Ensure only authenticated students can access
+    permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
         student_usermaster = request.user
-        student_identity=UsersIdentity.objects.filter(UserName=student_usermaster.username).first()
+        student_identity = UsersIdentity.objects.filter(UserName=student_usermaster.username).first()
         if student_identity is not None:
-            student=student_identity
+            student = student_identity
 
-        # Ensure the student has groups assigned
-        student_groups = UserGroup.objects.filter(user=student, IsDeleted = False).values_list('GroupId', flat=True)
+        student_groups = UserGroup.objects.filter(user=student, IsDeleted=False).values_list('GroupId', flat=True)
         if not student_groups.exists():
             return Response({"message": "No groups assigned to this student."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Fetch projects associated with the student's groups
-        projects =ClassroomProject.objects.filter(group__GroupId__in=student_groups).prefetch_related("assets", "quizzes")
+        projects = ClassroomProject.objects.filter(
+            group__GroupId__in=student_groups
+        ).prefetch_related("assets", "quizzes")
+
         project_data = []
         for project in projects:
-            # Get quiz submissions for this project
             submissions = ReflectiveQuizSubmission.objects.filter(
                 student=student,
                 quiz__in=project.quizzes.all()
             )
-            # Check if all quizzes are correctly answered
-            project_submission = ProjectSubmission.objects.filter(student=student, project=project).first()
-            if project_submission:
-                is_completed = True
-            else:
-                is_completed = False
 
-            # Prepare submission data with additional options
+            project_submission = ProjectSubmission.objects.filter(student=student, project=project).first()
+            is_completed = bool(project_submission)
+
             submission_data = []
             for submission in submissions:
                 quiz = submission.quiz
-
-                # Map selected options to values
                 selected_values = [
                     quiz.options.get(str(option), "Invalid Option")
                     for option in submission.selected_options
                 ]
-
-                # Map all options for the quiz
                 all_options = [{"index": key, "value": value} for key, value in quiz.options.items()]
+                correct_answers = [quiz.options.get(str(index), "Invalid Option") for index in quiz.answers]
 
-                # Prepare detailed submission info
                 submission_data.append({
                     "quiz_id": quiz.id,
                     "question": quiz.question,
                     "selected_options": selected_values,
                     "is_correct": submission.is_correct,
                     "all_options": all_options,
-                    "correct_answers": [quiz.options.get(str(index), "Invalid Option") for index in quiz.answers]
+                    "correct_answers": correct_answers
                 })
 
-            # Serialize project data and add detailed submissions
             serializer = StudentClassroomProjectSerializer(project)
             project_info = serializer.data
             project_info['submitted_quizzes'] = submission_data
             project_info['is_completed'] = is_completed
-            project_info['project_submission'] = ProjectSubmissionSerializer(project_submission).data if project_submission else None
+            project_info['project_submission'] = (
+                ProjectSubmissionSerializer(project_submission).data if project_submission else None
+            )
 
             project_data.append(project_info)
 
-        return Response(project_data, status=status.HTTP_200_OK)
+        # 🔹 Apply pagination here
+        paginator = StandardResultsSetPagination()
+        paginated_data = paginator.paginate_queryset(project_data, request)
+
+        return paginator.get_paginated_response(paginated_data)
     
 class StudentProjectDetailView(APIView):
     permission_classes = [AllowAny]
