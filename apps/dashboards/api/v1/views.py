@@ -105,6 +105,7 @@ class HomeView(APIView):
             "total_students": total_students,
             "projects_assigned": total_students,  # assuming assigned = total
             "projects_submitted": submitted_count,
+            "group_id": GroupMaster.objects.get(GroupId=group_id).GroupId,
         })
             
         teacher_groups = group_mappings.values_list('GroupId', flat=True).distinct()
