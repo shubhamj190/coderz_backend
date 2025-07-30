@@ -454,7 +454,7 @@ class StudentProjectsView(APIView):
 
         projects = ClassroomProject.objects.filter(
             group__GroupId__in=student_groups
-        ).prefetch_related("assets", "quizzes")
+        ).prefetch_related("assets", "quizzes").order_by('date_created')
 
         project_data = []
         for project in projects:
