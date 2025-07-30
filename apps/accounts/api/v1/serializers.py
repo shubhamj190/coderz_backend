@@ -489,7 +489,16 @@ class UserSessionLogSerializer(serializers.ModelSerializer):
 class MissionActivitySummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = MissionActivitySummary
-        fields = '__all__'
+        fields = [
+            "user_id",
+            "quest_id",
+            "content_id",
+            "content_type_code",
+            "access_count",
+            "total_access_duration",
+            "first_access_duration",
+            "points"
+        ]
         read_only_fields = ['mission_activity_summary_id']  # if you want auto UUID
 
     def create(self, validated_data):
