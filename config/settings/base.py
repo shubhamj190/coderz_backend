@@ -167,7 +167,7 @@ DEFAULT_FILE_STORAGE = 'core.middlewares.storage_backends.AzureMediaStorage'
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = ["*"]
+CORS_ALLOW_HEADERS = ["*"] + ["content-type"]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
