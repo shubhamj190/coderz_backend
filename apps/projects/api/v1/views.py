@@ -23,7 +23,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 User = get_user_model()
 
 class ClassroomProjectCreateView(CreateAPIView):
-    queryset = ClassroomProject.objects.all()
+    queryset = ClassroomProject.objects.filter(is_active=True)
     serializer_class = ClassroomProjectSerializer
     permission_classes = [IsSpecificTeacher]
     parser_classes = (MultiPartParser, FormParser)  # Supports file uploads 
@@ -33,7 +33,7 @@ class ClassroomProjectCreateView(CreateAPIView):
         serializer.save(assigned_teacher=user_identity)
     
 class ClassroomProjectListView(ListAPIView):
-    queryset = ClassroomProject.objects.all()
+    queryset = ClassroomProject.objects.filter(is_active=True)
     serializer_class = ClassroomProjectSerializer
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ["grade", "division"]  # Filters for grade and division
@@ -41,7 +41,7 @@ class ClassroomProjectListView(ListAPIView):
     pagination_class = StandardResultsSetPagination
     
 class ClassroomProjectRetrieveUpdateView(RetrieveUpdateAPIView):
-    queryset = ClassroomProject.objects.all()
+    queryset = ClassroomProject.objects.filter(is_active=True)
     serializer_class = ClassroomProjectSerializer
     parser_classes = (MultiPartParser, FormParser)  # Supports file uploads
     permission_classes = [IsSpecificTeacher]  # Optional authentication
@@ -86,7 +86,7 @@ class ProjectAssetCreateView(CreateAPIView):
         return Response(assets, status=status.HTTP_201_CREATED)
     
 class RetrieveUpdateProjectAssetsView(RetrieveUpdateAPIView):
-    queryset = ClassroomProject.objects.all()
+    queryset = ClassroomProject.objects.filter(is_active=True)
     serializer_class = UpdateProjectAssetsSerializer
     permission_classes = [IsSpecificTeacher]
     lookup_field = "pk"
@@ -338,7 +338,7 @@ class ProjectSubmissionListView(ListAPIView):
             pass  # Keep full queryset
         elif user_type == "Teacher":
             group_teacher = TeacherLocationDetails.objects.filter(UserId=user_identity.UserId).values_list('GID_id', flat=True)
-            projects = ClassroomProject.objects.filter(group__GID__in=group_teacher)
+            projects = ClassroomProject.objects.filter(group__GID__in=group_teacher, is_active=True).distinct()
             queryset = queryset.filter(project__in=projects)
             groups = projects.values_list('group__GroupName', 'group__GID').distinct()
         elif user_type == "Learner":
@@ -381,7 +381,7 @@ class TeacherProjectsView(APIView):
             teacher = teacher_identity
 
         projects = ClassroomProject.objects.filter(
-            assigned_teacher=teacher
+            assigned_teacher=teacher, is_active=True
         ).prefetch_related("assets", "quizzes")
 
 
@@ -417,7 +417,7 @@ class TeacherProjectDetailView(APIView):
             # Fetch project assigned to this teacher
             project = (
                 ClassroomProject.objects
-                .filter(id=project_id, assigned_teacher=teacher)
+                .filter(id=project_id, assigned_teacher=teacher, is_active=True)
                 .prefetch_related("assets", "quizzes")
                 .first()
             )
@@ -453,7 +453,7 @@ class StudentProjectsView(APIView):
             return Response({"message": "No groups assigned to this student."}, status=status.HTTP_404_NOT_FOUND)
 
         projects = ClassroomProject.objects.filter(
-            group__GroupId__in=student_groups
+            group__GroupId__in=student_groups, is_active=True
         ).prefetch_related("assets", "quizzes").order_by('date_created')
 
         project_data = []
@@ -521,7 +521,7 @@ class StudentProjectDetailView(APIView):
         # Retrieve the project only if it belongs to the student's group
         project = (
             ClassroomProject.objects
-            .filter(id=project_id, group__GroupId__in=student_groups)
+            .filter(id=project_id, group__GroupId__in=student_groups, is_active=True)
             .prefetch_related("assets", "quizzes")
             .first()
         )

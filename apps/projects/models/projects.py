@@ -16,6 +16,7 @@ class ClassroomProject(models.Model):
     # Thumbnail for project
     thumbnail = models.ImageField(upload_to="projects/thumbnails/", blank=True, null=True)
     due_date = models.DateField(blank=True, null=True)
+    is_active = models.BooleanField(default=True, help_text="Is the project currently active?")
 
     # Meta fields
     date_created = models.DateTimeField(auto_now_add=True)

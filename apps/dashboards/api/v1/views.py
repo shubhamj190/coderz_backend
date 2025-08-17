@@ -60,7 +60,7 @@ class HomeView(APIView):
             teacher=teacher_identity
         teacher_id = teacher.UserId
         # Total Projects Assigned
-        total_projects_assigned = ClassroomProject.objects.filter(assigned_teacher=teacher).count()
+        total_projects_assigned = ClassroomProject.objects.filter(assigned_teacher=teacher, is_active=True).count()
 
         # Total Projects Uploaded (has a file)
         total_projects_uploaded = ProjectSubmission.objects.filter(project__assigned_teacher = teacher).exclude(
@@ -159,7 +159,7 @@ class GetTeacherStudentsProjectReport(APIView):
         # Get optional group_id
         group_id = request.GET.get('group_id')
         # Filter projects by teacher and optionally by group
-        projects_qs = ClassroomProject.objects.filter(assigned_teacher=teacher_identity)
+        projects_qs = ClassroomProject.objects.filter(assigned_teacher=teacher_identity, is_active=True)
         if group_id:
             projects_qs = projects_qs.filter(group__GroupId=group_id)
 
@@ -228,7 +228,7 @@ class StudentDashboardReportView(APIView):
         }
 
         # Project Summary
-        assigned_projects = ClassroomProject.objects.filter(group=group.GID).count()
+        assigned_projects = ClassroomProject.objects.filter(group=group.GID, is_active=True).count()
         uploaded_projects = ProjectSubmission.objects.filter(student=student).count()
         reviewed_projects = ProjectSubmission.objects.filter(
             student=student

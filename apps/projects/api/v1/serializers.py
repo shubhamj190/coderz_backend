@@ -217,7 +217,7 @@ class ClassroomProjectSerializer(serializers.ModelSerializer):
                 thumbnail=validated_data.get('thumbnail'),
                 due_date=validated_data['due_date'],
                 group=group,
-                assigned_teacher=validated_data['assigned_teacher']
+                assigned_teacher=validated_data['assigned_teacher'], is_active=True
             )
             # Create ProjectSession objects
             for session in session_data:
