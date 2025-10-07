@@ -154,7 +154,7 @@ class StudentClassroomProjectSerializer(serializers.ModelSerializer):
         fields = ["id", "title", "description", "assets", "quizzes", "grade", "division", "due_date", "thumbnail",'submitted_quizzes', 'groupId','groupName']
 
 class ProjectSessionSerializer(serializers.ModelSerializer):
-    ppt_file = serializers.ReadOnlyField()
+    ppt_file = serializers.FileField(required=True, allow_null=False)  # Allow upload
     thumbnail = serializers.ImageField(use_url=True, required=False)  # Allow upload
 
     class Meta:
