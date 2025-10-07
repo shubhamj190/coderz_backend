@@ -382,7 +382,7 @@ class TeacherProjectsView(APIView):
 
         projects = ClassroomProject.objects.filter(
             assigned_teacher=teacher, is_active=True
-        ).prefetch_related("assets", "quizzes")
+        ).prefetch_related("assets", "quizzes").order_by('-date_created')
 
 
         # Prepare group list
