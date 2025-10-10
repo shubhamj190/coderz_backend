@@ -179,3 +179,12 @@ CORS_ALLOWED_ORIGINS = [
     "http://coding1.questplus.in",
 
 ]
+
+# 1️⃣ Max upload size (in bytes) — set higher than 10MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
+
+# 2️⃣ File upload memory limit
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
+
+# 3️⃣ Optional: where uploads are temporarily stored
+FILE_UPLOAD_TEMP_DIR = "/tmp"
